@@ -1,0 +1,14 @@
+specVersion: 0.0.1
+description: None
+repository: ''
+schema: ./schema.graphql
+network:
+  endpoint: ws://docker.for.mac.localhost:9944
+dataSources:
+  - name: main
+    kind: substrate/Runtime
+    startBlock: 1
+    mapping:
+      handlers:
+        - handler: handleCall
+          kind: substrate/CallHandler
