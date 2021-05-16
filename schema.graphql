@@ -5,3 +5,39 @@ type RemarkEntity @entity {
   caller: String!
   blockNumber: String!
 }
+
+
+type CollectionEntity @entity {
+
+  id: ID! #id is a required field
+  value: String!
+  caller: String!
+  blockNumber: String!
+}
+
+type NFTEntity @entity {
+  history: [History]
+  emotes: [Emote]
+}
+
+type History {
+  blockNumber: String!
+  caller: String!
+  interaction: String!
+  meta: String!
+}
+
+type Emote {
+  caller: String!
+  value: String!
+}
+
+
+enum Interaction {
+  MINT
+  MINTNFT
+  LIST
+  BUY
+  CONSUME
+  EMOTE
+}
