@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid'
 import { Call as TCall } from "@polkadot/types/interfaces";
 // import { RemarkEntity } from '../types/models/RemarkEntity';
 import {RemarkEntity} from "../types";
-import { getRemarksFrom } from '../utils/extract'
+import { getRemarksFrom } from './utils/extract'
 
 
 // export async function handleBlock(block: SubstrateBlock): Promise<void> {

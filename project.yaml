@@ -4,11 +4,35 @@ repository: ''
 schema: ./schema.graphql
 network:
   endpoint: ws://docker.for.mac.localhost:9944
+definitions:
+  mapping: &mymapping
+    handlers:
+      - handler: handleCall
+        kind: substrate/CallHandler
+        filter:
+            module: utility
+            method: batchAll
+            success: true
+      - handler: handleCall
+        kind: substrate/CallHandler
+        filter:
+            module: utility
+            method: batch
+            success: true
+      - handler: handleCall
+        kind: substrate/CallHandler
+        filter:
+            module: system
+            method: remark
+            success: true
 dataSources:
   - name: main
     kind: substrate/Runtime
     startBlock: 1
-    mapping:
-      handlers:
-        - handler: handleCall
-          kind: substrate/CallHandler
+    mapping: *mymapping
+  - name: kusamaRuntime
+    kind: substrate/Runtime
+    filter: 
+        specName: kusama
+    startBlock: 4892957 
+    mapping: *mymapping # can reuse or change

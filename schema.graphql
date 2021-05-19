@@ -1,37 +1,48 @@
 type RemarkEntity @entity {
-
   id: ID! #id is a required field
   value: String!
   caller: String!
   blockNumber: String!
 }
 
-
 type CollectionEntity @entity {
-
-  id: ID! #id is a required field
-  value: String!
-  caller: String!
-  blockNumber: String!
+  version: String
+  name: String
+  max: Int
+  issuer: String
+  symbol: String
+  id: ID!
+  metadata: String
+  blockNumber: Int
 }
 
 type NFTEntity @entity {
-  history: [History]
+  name: String
+  instance: String
+  transferable: Int
+  collection: String
+  sn: String
+  id: ID!
+  metadata: String
+  currentOwner: String
+  price: String
+  burned: Boolean
+  blockNumber: Int
+  events: [Event]
   emotes: [Emote]
 }
 
-type History {
-  blockNumber: String!
+type Event @jsonField {
+  blockNumber: Int
   caller: String!
   interaction: String!
   meta: String!
 }
 
-type Emote {
+type Emote @jsonField {
   caller: String!
   value: String!
 }
-
 
 enum Interaction {
   MINT
