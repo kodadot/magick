@@ -1,14 +1,8 @@
 import { hexToString, isHex } from '@polkadot/util';
 import { RmrkEvent, RMRK, RmrkInteraction } from './types';
-import { SQUARE } from '../utils'
-import { Collection, NFT, NFTWithMeta, SimpleNFT } from './scheme';
+const SQUARE = '::'
 import slugify from 'slugify';
 
-
-export type MintType = {
-  collection: Collection
-  nfts: NFT[]
-}
 
 class NFTUtils {
   public static decode(value: string) {

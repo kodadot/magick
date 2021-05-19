@@ -44,8 +44,9 @@ export const getRemarksFrom = (extrinsic: SubstrateExtrinsic): RemarkResult[] =>
     return []
   }
 
-  const signer = encodeAddress(extrinsic.extrinsic.signer.toString());
-  const blockNumber = extrinsic.block.block.header.hash.toString()
+  const signer = extrinsic.extrinsic.signer.toString();
+  const blockNumber = extrinsic.block.block.header.number.toString()
+  
   if (isSystemRemark(extrinsic.extrinsic.method as TCall)) {
     return [{
       value: extrinsic.extrinsic.args.toString(),
@@ -61,6 +62,8 @@ export const getRemarksFrom = (extrinsic: SubstrateExtrinsic): RemarkResult[] =>
 
     return processBatch(extrinsic.extrinsic.method.args[0] as unknown as TCall[], signer, blockNumber)
   }
+
+  return [];
 }
 
 
