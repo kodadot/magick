@@ -3,6 +3,7 @@ up:
 
 clear:
   docker-compose rm -f
+  rm -rf .data
 
 types:
   yarn codegen

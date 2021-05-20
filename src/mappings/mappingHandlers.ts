@@ -192,3 +192,36 @@ export async function handleCall(extrinsic: SubstrateExtrinsic): Promise<void> {
 }
 
 
+
+// export async function handleRemark(extrinsic: SubstrateExtrinsic): Promise<void> {
+//   const records = getRemarksFrom(extrinsic)
+
+//   for (const remark of records) {
+//     try {
+//       const event: RmrkEvent = NFTUtils.getAction(remark.value)
+//       switch (event) {
+//         case RmrkEvent.MINT:
+//           await mint(remark)
+//         case RmrkEvent.MINTNFT:
+//           await mintNFT(remark)
+//         case RmrkEvent.SEND:
+//           await send(remark)
+//         case RmrkEvent.BUY:
+//           await buy(remark)
+//         case RmrkEvent.CONSUME:
+//           await consume(remark)
+//         case RmrkEvent.LIST:
+//           await list(remark)
+//         case RmrkEvent.CHANGEISSUER:
+//           await changeIssuer(remark)
+//         case RmrkEvent.EMOTE:
+//           await emote(remark)
+//         default:
+//           throw new EvalError(`Unable to evaluate following string, ${remark.value}`)
+//       }
+//     } catch (e) {
+//       throw e
+//     }
+      
+//   }
+// }

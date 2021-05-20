@@ -34,19 +34,19 @@ import { getRemarksFrom } from './utils/extract'
 //     await record.save();
 // }
 
-export async function handleRemark(extrinsic: SubstrateExtrinsic): Promise<void> {
-    const records = getRemarksFrom(extrinsic)
-    .map(r => ({...r, id: nanoid() }))
-    .map(RemarkEntity.create);
+// export async function handleRemark(extrinsic: SubstrateExtrinsic): Promise<void> {
+//     const records = getRemarksFrom(extrinsic)
+//     .map(r => ({...r, id: nanoid() }))
+//     .map(RemarkEntity.create);
 
-    for (const record of records) {
-        try {
-            await record.save()
-        } catch (e) {
-            console.warn(`[ERR] Can't save RMRK at block ${record.blockNumber} because \n${e}`)
-        }
+//     for (const record of records) {
+//         try {
+//             await record.save()
+//         } catch (e) {
+//             console.warn(`[ERR] Can't save RMRK at block ${record.blockNumber} because \n${e}`)
+//         }
         
-    }
+//     }
     
     // const record = new RemarkEntity(extrinsic.block.block.header.hash.toString() + nanoid(5));
     
@@ -55,6 +55,6 @@ export async function handleRemark(extrinsic: SubstrateExtrinsic): Promise<void>
     // //Boolean tyep
     // record.field5 = true;
     // await record.save();
-}
+// }
 
 
