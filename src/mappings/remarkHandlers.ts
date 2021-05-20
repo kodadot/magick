@@ -45,15 +45,8 @@ export async function handleRemark(extrinsic: SubstrateExtrinsic): Promise<void>
             console.warn(`[ERR] Can't save RMRK at block ${record.blockNumber} because \n${e}`)
         }
         
+    
     }
-    
-    // const record = new RemarkEntity(extrinsic.block.block.header.hash.toString() + nanoid(5));
-    
-    // //Date type timestamp
-    // record.field4 = e
-    // //Boolean tyep
-    // record.field5 = true;
-    // await record.save();
 }
 
 

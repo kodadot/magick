@@ -9,6 +9,7 @@ types:
   yarn codegen
 
 build:
+  rm -rfv dist
   yarn build
 
 bug: build up
