@@ -1,8 +1,13 @@
-import { hexToString, isHex } from '@polkadot/util';
 import { RmrkEvent, RMRK, RmrkInteraction } from './types';
 const SQUARE = '::'
-import slugify from 'slugify';
 
+export function isHex(text: string) {
+  return text.startsWith('0x')
+}
+
+export function hexToString(text: string) {
+  return Buffer.from(text.replace(/^0x/, ''), 'hex').toString()
+}
 
 class NFTUtils {
   public static decode(value: string) {
@@ -24,11 +29,6 @@ class NFTUtils {
     } catch(e) {
       throw e
     }
-  }
-
-  public static upperTrim(name: string, slug?: boolean) {
-    const result = name.trim().toUpperCase()
-    return slug ? slugify(result, '_') : result
   }
 
   public static nftSerialNumber(index: number, offset: number = 0, plusOne: boolean = true) {

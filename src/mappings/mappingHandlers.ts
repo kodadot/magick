@@ -1,10 +1,9 @@
 import {CollectionEntity, NFTEntity, RemarkEntity} from "../types";
 import { SubstrateExtrinsic } from "@subql/types";
 import { getRemarksFrom, RemarkResult } from './utils';
-// import { Collection, eventFrom, getNftId, NFT, RmrkEvent, RmrkInteraction } from './utils/types';
-// import NFTUtils from './utils/NftUtils';
-// import { canOrElseError, exists, hasMeta, isOwnerOrElseError, validateInteraction } from './utils/consolidator'
-// // import { encodeAddress } from "@polkadot/util-crypto";
+import { Collection, eventFrom, getNftId, NFT, RmrkEvent, RmrkInteraction } from './utils/types';
+import NFTUtils, { hexToString } from './utils/NftUtils';
+import { canOrElseError, exists, hasMeta, isOwnerOrElseError, validateInteraction } from './utils/consolidator'
 
 // async function mint(remark: RemarkResult) {
 //   const collection = NFTUtils.unwrap(remark.value) as Collection
@@ -178,7 +177,7 @@ import { getRemarksFrom, RemarkResult } from './utils';
 
 export async function handleCall(extrinsic: SubstrateExtrinsic): Promise<void> {
     const records = getRemarksFrom(extrinsic)
-    .map((r, i) => ({...r, id: `${r.blockNumber}-${i}` }))
+    .map((r, i) => ({...r, id: `${r.blockNumber}-${i}`, interaction: hexToString(r.value)}))
     .map(RemarkEntity.create);
 
     for (const record of records) {

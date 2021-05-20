@@ -12,5 +12,5 @@ build:
   rm -rfv dist
   yarn build
 
-bug: build up
+bug: clear build up
 sub: types build

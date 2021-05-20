@@ -3,6 +3,7 @@ type RemarkEntity @entity {
   value: String!
   caller: String!
   blockNumber: String!
+  interaction: String
 }
 
 type CollectionEntity @entity {
@@ -37,7 +38,7 @@ type Event @jsonField {
   blockNumber: BigInt
   timestamp: Date
   caller: String!
-  interaction: String!
+  interaction: String
   meta: String!
 }
 

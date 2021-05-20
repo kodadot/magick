@@ -2,6 +2,7 @@
   "name": "magick",
   "version": "1.0.0",
   "description": "None",
+  "type": "module",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc -b",
