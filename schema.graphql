@@ -13,7 +13,7 @@ type CollectionEntity @entity {
   symbol: String
   id: ID!
   metadata: String
-  blockNumber: Int
+  blockNumber: BigInt
 }
 
 type NFTEntity @entity {
@@ -21,19 +21,21 @@ type NFTEntity @entity {
   instance: String
   transferable: Int
   collection: String
+  issuer: String
   sn: String
   id: ID!
   metadata: String
   currentOwner: String
-  price: String
+  price: BigInt
   burned: Boolean
-  blockNumber: Int
+  blockNumber: BigInt
   events: [Event]
   emotes: [Emote]
 }
 
 type Event @jsonField {
-  blockNumber: Int
+  blockNumber: BigInt
+  timestamp: Date
   caller: String!
   interaction: String!
   meta: String!

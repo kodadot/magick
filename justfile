@@ -4,7 +4,7 @@ up:
 clear:
   docker-compose rm -f
 
-sub:
+types:
   yarn codegen
 
 build:
