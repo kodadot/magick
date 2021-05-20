@@ -1,6 +1,5 @@
 import {SubstrateExtrinsic,SubstrateEvent,SubstrateBlock} from "@subql/types";
 import {Balance} from "@polkadot/types/interfaces";
-import { nanoid } from 'nanoid'
 import { Call as TCall } from "@polkadot/types/interfaces";
 // import { RemarkEntity } from '../types/models/RemarkEntity';
 import {RemarkEntity} from "../types";
@@ -34,19 +33,19 @@ import { getRemarksFrom } from './utils/extract'
 //     await record.save();
 // }
 
-// export async function handleRemark(extrinsic: SubstrateExtrinsic): Promise<void> {
-//     const records = getRemarksFrom(extrinsic)
-//     .map(r => ({...r, id: nanoid() }))
-//     .map(RemarkEntity.create);
+export async function handleRemark(extrinsic: SubstrateExtrinsic): Promise<void> {
+    const records = getRemarksFrom(extrinsic)
+    .map((r, i) => ({...r, id: `${r.blockNumber}-${i}` }))
+    .map(RemarkEntity.create);
 
-//     for (const record of records) {
-//         try {
-//             await record.save()
-//         } catch (e) {
-//             console.warn(`[ERR] Can't save RMRK at block ${record.blockNumber} because \n${e}`)
-//         }
+    for (const record of records) {
+        try {
+            await record.save()
+        } catch (e) {
+            console.warn(`[ERR] Can't save RMRK at block ${record.blockNumber} because \n${e}`)
+        }
         
-//     }
+    }
     
     // const record = new RemarkEntity(extrinsic.block.block.header.hash.toString() + nanoid(5));
     
@@ -55,6 +54,6 @@ import { getRemarksFrom } from './utils/extract'
     // //Boolean tyep
     // record.field5 = true;
     // await record.save();
-// }
+}
 
 

@@ -12,3 +12,4 @@ build:
   yarn build
 
 bug: build up
+sub: types build
