@@ -21,9 +21,10 @@ async function mint(remark: RemarkResult) {
     final.blockNumber = BigInt(remark.blockNumber)
     final.metadata = collection.metadata
 
+    logger.info(`SAVED [MINTNFT] ${final.id}`)
     await final.save()
   } catch (e) {
-    console.warn(`[MINT] ${e.message}`)
+    logger.warn(`[MINT] ${e.message}`)
   }
 
 }
@@ -52,10 +53,10 @@ async function mintNFT(remark: RemarkResult) {
     final.events = [eventFrom(RmrkEvent.MINTNFT, final.blockNumber, remark.caller, new Date(), '')]
     final.emotes = []
     
-
+    logger.info(`SAVED [MINTNFT] ${final.id}`)
     await final.save()
   } catch (e) {
-    console.warn(`[MINT] ${e.message}`)
+    logger.warn(`[MINT] ${e.message}`)
   }
 }
 
@@ -68,7 +69,7 @@ async function send(remark: RemarkResult) {
     isOwnerOrElseError(nft, remark.caller)
 
   } catch (e) {
-    console.warn(`[SEND] ${e.message}`)
+    logger.warn(`[SEND] ${e.message}`)
   }
   // exists
   // not burned
@@ -84,7 +85,7 @@ async function buy(remark: RemarkResult) {
     validateInteraction(nft, interaction)
 
   } catch (e) {
-    console.warn(`[BUY] ${e.message}`)
+    logger.warn(`[BUY] ${e.message}`)
   }
   // exists
   // not burned
@@ -107,7 +108,7 @@ async function consume(remark: RemarkResult ) {
     await nft.save();
 
   } catch (e) {
-    console.warn(`[SEND] ${e.message}`)
+    logger.warn(`[SEND] ${e.message}`)
   }
   // exists
   // not burned
@@ -129,7 +130,7 @@ async function list(remark: RemarkResult ) {
 
   } catch (e) {
 
-    console.warn(`[LIST] ${e.message}`)
+    logger.warn(`[LIST] ${e.message}`)
   }
   // exists
   // not burned
@@ -147,7 +148,7 @@ async function changeIssuer(remark: RemarkResult ) {
     canOrElseError<CollectionEntity>(exists, collection, true)
     isOwnerOrElseError(collection, remark.caller)
   } catch (e) {
-    console.warn(`[EMOTE] ${e.message}`)
+    logger.warn(`[EMOTE] ${e.message}`)
   }
   
 
@@ -165,7 +166,7 @@ async function emote(remark: RemarkResult ) {
     if (alreadyEmoted) {}
 
   } catch (e) {
-    console.warn(`[EMOTE] ${e.message}`)
+    logger.warn(`[EMOTE] ${e.message}`)
   }
 
   // exists
@@ -184,7 +185,7 @@ export async function handleCall(extrinsic: SubstrateExtrinsic): Promise<void> {
         try {
             await record.save()
         } catch (e) {
-            console.warn(`[ERR] Can't save RMRK at block ${record.blockNumber} because \n${e}`)
+            logger.warn(`[ERR] Can't save RMRK at block ${record.blockNumber} because \n${e}`)
         }
         
     }
@@ -199,6 +200,7 @@ export async function handleRemark(extrinsic: SubstrateExtrinsic): Promise<void>
     try {
       const decoded = hexToString(remark.value)
       const event: RmrkEvent = NFTUtils.getAction(decoded)
+      logger.info(`ACTION ${event}`)
 
       switch (event) {
         case RmrkEvent.MINT:

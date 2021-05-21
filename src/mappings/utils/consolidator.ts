@@ -25,13 +25,13 @@ export function isOwner(entity: Entity, caller: string) {
 
 export function isOwnerOrElseError(entity: Entity, caller: string) {
   if (!isOwner(entity, caller)) {
-    throw new ReferenceError(`[NO Transfer] \nCaller ${isOwnerOrElseError.caller}`)
+    throw new ReferenceError(`[CONSOLIDATE Bad Owner] Entity: ${entity.issuer} Caller: ${caller}`)
   }
 }
 
 export function canOrElseError<T>(callback: (arg: T) => boolean, entity: T, negation?: boolean) {
   if (negation ? !callback(entity) : callback(entity)) {
-    throw new ReferenceError(`[NO canOrElseError] \n Callback ${callback.name}`)
+    throw new ReferenceError(`[CONSOLIDATE canOrElseError] Callback${negation ? ' not' : ''} ${callback.name}`)
   }
 }
 

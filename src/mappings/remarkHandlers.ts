@@ -41,8 +41,9 @@ export async function handleRemark(extrinsic: SubstrateExtrinsic): Promise<void>
     for (const record of records) {
         try {
             await record.save()
+            logger.info(`[Saved RMRK] ${record.id}`)
         } catch (e) {
-            console.warn(`[ERR] Can't save RMRK at block ${record.blockNumber} because \n${e}`)
+            logger.warn(`[ERR] Can't save RMRK at block ${record.blockNumber} because \n${e}`)
         }
         
     
