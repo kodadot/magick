@@ -16,7 +16,7 @@ export const getNftId = (nft: any, blocknumber?: string | number): string => {
   return `${blocknumber ? blocknumber + '-' : '' }${nft.collection}-${nft.instance || nft.name}-${nft.sn}`
 }
 
-export function eventFrom(interaction: RmrkEvent, blockNumber: bigint, caller: string, timestamp: Date, meta: string): Event {
+export function eventFrom(interaction: RmrkEvent, blockNumber: string, caller: string, timestamp: Date, meta: string): Event {
   return {
     interaction,
     blockNumber,

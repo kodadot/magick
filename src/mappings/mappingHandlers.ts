@@ -10,8 +10,8 @@ async function mint(remark: RemarkResult) {
   
   try {
     canOrElseError<string>(exists, collection.id, true)
-    const entity = await CollectionEntity.get(collection.id)
-    canOrElseError<CollectionEntity>(exists, entity)
+    // const entity = await CollectionEntity.get(collection.id)
+    // canOrElseError<CollectionEntity>(exists, entity)
     const final = CollectionEntity.create(collection)
     
     final.name = collection.name.trim()
@@ -21,10 +21,10 @@ async function mint(remark: RemarkResult) {
     final.blockNumber = BigInt(remark.blockNumber)
     final.metadata = collection.metadata
 
-    logger.info(`SAVED [MINTNFT] ${final.id}`)
+    logger.info(`SAVED [COLLECTION] ${final.id}`)
     await final.save()
   } catch (e) {
-    logger.warn(`[MINT] ${e.message}`)
+    logger.warn(`[COLLECTION] ${e.message}, ${JSON.stringify(collection)}`)
   }
 
 }
@@ -33,10 +33,10 @@ async function mintNFT(remark: RemarkResult) {
   const nft = NFTUtils.unwrap(remark.value) as NFT
   
   try {
-    canOrElseError<string>(exists, nft.collection, true)
+    // canOrElseError<string>(exists, nft.collection, true)
     const collection = await CollectionEntity.get(nft.collection)
-    canOrElseError<CollectionEntity>(exists, collection, true)
-    isOwnerOrElseError(collection, remark.caller)
+    // canOrElseError<CollectionEntity>(exists, collection, true)
+    // isOwnerOrElseError(collection, remark.caller)
     const final = NFTEntity.create(nft)
     
     final.id = getNftId(nft, remark.blockNumber)
@@ -50,13 +50,13 @@ async function mintNFT(remark: RemarkResult) {
     final.sn = nft.sn
     final.metadata = nft.metadata
     final.price = BigInt(0) 
-    final.events = [eventFrom(RmrkEvent.MINTNFT, final.blockNumber, remark.caller, new Date(), '')]
+    final.events = [eventFrom(RmrkEvent.MINTNFT, remark.blockNumber, remark.caller, new Date(), '')]
     final.emotes = []
     
-    logger.info(`SAVED [MINTNFT] ${final.id}`)
+    logger.info(`SAVED [MINT] ${final.id}`)
     await final.save()
   } catch (e) {
-    logger.warn(`[MINT] ${e.message}`)
+    logger.warn(`[MINT] ${e.message} ${JSON.stringify(nft)}`)
   }
 }
 
@@ -69,7 +69,7 @@ async function send(remark: RemarkResult) {
     isOwnerOrElseError(nft, remark.caller)
 
   } catch (e) {
-    logger.warn(`[SEND] ${e.message}`)
+    logger.warn(`[SEND] ${e.message} ${JSON.stringify(interaction)}`)
   }
   // exists
   // not burned
@@ -85,7 +85,7 @@ async function buy(remark: RemarkResult) {
     validateInteraction(nft, interaction)
 
   } catch (e) {
-    logger.warn(`[BUY] ${e.message}`)
+    logger.warn(`[BUY] ${e.message} ${JSON.stringify(interaction)}`)
   }
   // exists
   // not burned
@@ -108,7 +108,7 @@ async function consume(remark: RemarkResult ) {
     await nft.save();
 
   } catch (e) {
-    logger.warn(`[SEND] ${e.message}`)
+    logger.warn(`[SEND] ${e.message} ${JSON.stringify(interaction)}`)
   }
   // exists
   // not burned
@@ -130,7 +130,7 @@ async function list(remark: RemarkResult ) {
 
   } catch (e) {
 
-    logger.warn(`[LIST] ${e.message}`)
+    logger.warn(`[LIST] ${e.message} ${JSON.stringify(interaction)}`)
   }
   // exists
   // not burned
@@ -148,7 +148,7 @@ async function changeIssuer(remark: RemarkResult ) {
     canOrElseError<CollectionEntity>(exists, collection, true)
     isOwnerOrElseError(collection, remark.caller)
   } catch (e) {
-    logger.warn(`[EMOTE] ${e.message}`)
+    logger.warn(`[EMOTE] ${e.message} ${JSON.stringify(interaction)}`)
   }
   
 

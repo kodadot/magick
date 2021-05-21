@@ -35,7 +35,7 @@ type NFTEntity @entity {
 }
 
 type Event @jsonField {
-  blockNumber: BigInt
+  blockNumber: String
   timestamp: Date
   caller: String!
   interaction: String
