@@ -6,6 +6,13 @@ type RemarkEntity @entity {
   interaction: String
 }
 
+type FailedEntity @entity {
+  id: ID! #id is a required field
+  value: String!
+  reason: String!
+  interaction: String
+}
+
 type CollectionEntity @entity {
   version: String
   name: String
@@ -42,7 +49,8 @@ type Event @jsonField {
   meta: String!
 }
 
-type Emote @jsonField {
+type Emote @entity {
+  id: ID!
   caller: String!
   value: String!
 }
