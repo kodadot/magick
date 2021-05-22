@@ -218,7 +218,13 @@ async function logFail(message: string, reason: string, interaction: RmrkEvent) 
 
 export async function handleCall(extrinsic: SubstrateExtrinsic): Promise<void> {
     const records = getRemarksFrom(extrinsic)
-    .map((r, i) => ({...r, id: `${r.blockNumber}-${i}`, interaction: NFTUtils.getAction(hexToString(r.value))}))
+    .map((r, i) => {
+      try {
+        return { ...r, id: `${r.blockNumber}-${i}`, interaction: NFTUtils.getAction(hexToString(r.value)) }
+      } catch (e) {
+        return { ...r, id: `${r.blockNumber}-${i}`, interaction: hexToString(r.value) }
+      }
+    })
     .map(RemarkEntity.create);
 
     for (const record of records) {
@@ -271,7 +277,7 @@ export async function handleRemark(extrinsic: SubstrateExtrinsic): Promise<void>
           // throw new EvalError(`Unable to evaluate following string, ${event}::${remark.value}`)
       }
     } catch (e) {
-      throw e
+      logger.error(`[MALFORMED] ${remark.blockNumber}::${hexToString(remark.value)}`)
     }
       
   }
