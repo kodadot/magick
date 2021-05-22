@@ -78,24 +78,28 @@ class NFTUtils {
 
   public static unwrap(rmrkString: string): any {
     const rmrk = isHex(rmrkString) ? hexToString(rmrkString) : rmrkString
-    const decoded = decodeURIComponent(rmrk)
-    const rr: RegExp = /{.*}/
-    const match = decoded.match(rr)
+    try {
+      const decoded = decodeURIComponent(rmrk)
+      const rr: RegExp = /{.*}/
+      const match = decoded.match(rr)
 
-    if (match) {
-      return JSON.parse(match[0])
+      if (match) {
+        return JSON.parse(match[0])
+      }
+
+      const split = decoded.split(SQUARE)
+
+      if (split.length >= 4) {
+        return ({
+          id: split[3],
+          metadata: split[4]
+        } as RmrkInteraction)
+      }
+
+      throw new TypeError(`RMRK: Unable to unwrap object ${decoded}`)
+    } catch (e) {
+      throw e
     }
-
-    const split = decoded.split(SQUARE)
-
-    if (split.length >= 4) {
-      return ({
-        id: split[3],
-        metadata: split[4]
-      } as RmrkInteraction)
-    }
-
-    throw new TypeError(`RMRK: Unable to unwrap object ${decoded}`)
   }
 
 }
