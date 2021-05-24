@@ -73,6 +73,7 @@ async function send(remark: RemarkResult) {
     isOwnerOrElseError(nft, remark.caller)
 
     nft.currentOwner = interaction.metadata
+    nft.price = BigInt(0)
     nft.events.push(eventFrom(RmrkEvent.SEND, remark.blockNumber, remark.caller, new Date(), interaction.metadata))
     await nft.save()
 
@@ -93,10 +94,13 @@ async function buy(remark: RemarkResult) {
   try {
     interaction = NFTUtils.unwrap(remark.value) as RmrkInteraction
     const nft = await NFTEntity.get(interaction.id)
-    validateInteraction(nft, interaction)
-    nft.currentOwner = interaction.metadata
+    canOrElseError<NFTEntity>(exists, nft, true)
+    canOrElseError<NFTEntity>(isBurned, nft)
+    canOrElseError<NFTEntity>(isTransferable, nft, true)
+    nft.currentOwner = remark.caller
     nft.price = BigInt(0)
-    nft.events.push(eventFrom(RmrkEvent.BUY, remark.blockNumber, remark.caller, new Date(), interaction.metadata))
+    nft.events.push(eventFrom(RmrkEvent.BUY, remark.blockNumber, remark.caller, new Date(), remark.caller))
+    await nft.save();
 
   } catch (e) {
     logger.warn(`[BUY] ${e.message} ${JSON.stringify(interaction)}`)
@@ -146,7 +150,7 @@ async function list(remark: RemarkResult ) {
     validateInteraction(nft, interaction)
     isOwnerOrElseError(nft, remark.caller)
     nft.price = BigInt(interaction.metadata)
-    // add LIST event
+    nft.events.push(eventFrom(RmrkEvent.LIST, remark.blockNumber, remark.caller, new Date(), interaction.metadata))
     await nft.save();
 
   } catch (e) {
@@ -258,6 +262,7 @@ export async function handleRemark(extrinsic: SubstrateExtrinsic): Promise<void>
           await send(remark)
           break;
         case RmrkEvent.BUY:
+          logger.info(`[BUY] ${remark.blockNumber}::${hexToString(remark.value)}`)
           await buy(remark)
           break;
         case RmrkEvent.CONSUME:
