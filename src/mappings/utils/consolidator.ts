@@ -1,5 +1,6 @@
 import { RmrkInteraction } from './types'
 import { CollectionEntity, NFTEntity } from '../../types'
+// import { decodeAddress } from '@polkadot/util-crypto'
 type Entity = CollectionEntity | NFTEntity
 
 export function exists<T>(entity: T | undefined): boolean {
@@ -55,3 +56,12 @@ export function isPositiveOrElseError(entity: BigInt | number, excludeZero?: boo
     throw new ReferenceError(`[CONSOLIDATE isPositiveOrElseError] Entity: ${entity}`)
   }
 }
+
+// TODO: Does not work :)
+// export function isAccountValidOrElseError(caller: string) {
+//   try {
+//     decodeAddress(caller)
+//   } catch (e) {
+//     throw new ReferenceError(`[CONSOLIDATE Invalid account] ${caller}`)
+//   }
+// }

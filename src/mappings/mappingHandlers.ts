@@ -3,7 +3,7 @@ import { SubstrateExtrinsic } from "@subql/types";
 import { getRemarksFrom, RemarkResult } from './utils';
 import { Collection, eventFrom, getNftId, NFT, RmrkEvent, RmrkInteraction } from './utils/types';
 import NFTUtils, { hexToString } from './utils/NftUtils';
-import { canOrElseError, exists, hasMeta, isBurned, isOwner, isOwnerOrElseError, isPositiveOrElseError, isTransferable, validateInteraction } from './utils/consolidator'
+import { canOrElseError, exists, hasMeta, isBurned, isOwnerOrElseError, isPositiveOrElseError, isTransferable, validateInteraction } from './utils/consolidator'
 import { randomBytes } from 'crypto'
 import { emoteId, ensureInteraction } from './utils/helper';
 
@@ -73,6 +73,7 @@ async function send(remark: RemarkResult) {
     const nft = await NFTEntity.get(interaction.id)
     validateInteraction(nft, interaction)
     isOwnerOrElseError(nft, remark.caller)
+    // isAccountValidOrElseError(interaction.metadata)
 
     nft.currentOwner = interaction.metadata
     nft.price = BigInt(0)
