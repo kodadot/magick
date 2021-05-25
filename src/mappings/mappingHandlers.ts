@@ -19,6 +19,7 @@ async function mint(remark: RemarkResult) {
     final.name = collection.name.trim()
     final.max = Number(collection.max)
     final.issuer = remark.caller
+    final.currentOwner = remark.caller
     final.symbol = collection.symbol.trim()
     final.blockNumber = BigInt(remark.blockNumber)
     final.metadata = collection.metadata
