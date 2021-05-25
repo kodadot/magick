@@ -94,6 +94,7 @@ async function buy(remark: RemarkResult) {
     canOrElseError<NFTEntity>(exists, nft, true)
     canOrElseError<NFTEntity>(isBurned, nft)
     canOrElseError<NFTEntity>(isTransferable, nft, true)
+    isPositiveOrElseError(nft.price, true)
     nft.currentOwner = remark.caller
     nft.price = BigInt(0)
     nft.events.push(eventFrom(RmrkEvent.BUY, remark, remark.caller))

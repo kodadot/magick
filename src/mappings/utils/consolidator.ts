@@ -50,8 +50,8 @@ export function validateInteraction(nft: NFTEntity, interaction: RmrkInteraction
   }
 }
 
-export function isPositiveOrElseError(entity: BigInt | number) {
-  if (entity < 0 ) {
+export function isPositiveOrElseError(entity: BigInt | number, excludeZero?: boolean) {
+  if (entity < Number(excludeZero)) {
     throw new ReferenceError(`[CONSOLIDATE isPositiveOrElseError] Entity: ${entity}`)
   }
 }
