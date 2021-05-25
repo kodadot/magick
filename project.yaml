@@ -3,7 +3,7 @@ description: None
 repository: ''
 schema: ./schema.graphql
 network:
-  endpoint: ws://docker.for.mac.localhost:9944
+  endpoint: wss://kusama.api.onfinality.io/public-ws
 definitions:
   mapping: &mymapping
     handlers:
@@ -44,13 +44,13 @@ definitions:
             method: remark
             success: true  
 dataSources:
+    - name: kusamaRuntime
+    kind: substrate/Runtime
+    filter: 
+        specName: kusama
+    startBlock: 4892957
+    mapping: *mymapping # can reuse or change
   - name: main
     kind: substrate/Runtime
     startBlock: 1
     mapping: *mymapping
-  - name: kusamaRuntime
-    kind: substrate/Runtime
-    filter: 
-        specName: kusama
-    startBlock: 4892957 
-    mapping: *mymapping # can reuse or change
