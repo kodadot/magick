@@ -21,6 +21,9 @@ type CollectionEntity @entity {
   symbol: String
   id: ID!
   metadata: String
+  currentOwner: String
+  nfts: [NFTEntity] @derivedFrom(field: "collection")
+  events: [Event]
   blockNumber: BigInt
 }
 
@@ -28,7 +31,7 @@ type NFTEntity @entity {
   name: String
   instance: String
   transferable: Int
-  collection: String
+  collection: CollectionEntity!
   issuer: String
   sn: String
   id: ID!
@@ -38,7 +41,7 @@ type NFTEntity @entity {
   burned: Boolean
   blockNumber: BigInt
   events: [Event]
-  emotes: [Emote]
+  emotes: [Emote] @derivedFrom(field: "nft")
 }
 
 type Event @jsonField {
@@ -51,6 +54,7 @@ type Event @jsonField {
 
 type Emote @entity {
   id: ID!
+  nft: NFTEntity!
   caller: String!
   value: String!
 }

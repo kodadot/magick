@@ -1,5 +1,7 @@
 import { RmrkInteraction } from './types'
 import { CollectionEntity, NFTEntity } from '../../types'
+import { ExtraCall } from './extract'
+// import { decodeAddress } from '@polkadot/util-crypto'
 type Entity = CollectionEntity | NFTEntity
 
 export function exists<T>(entity: T | undefined): boolean {
@@ -19,6 +21,10 @@ export function hasMeta(nft: RmrkInteraction): nft is RmrkInteraction  {
 }
 
 export function isOwner(entity: Entity, caller: string) {
+  return entity.currentOwner === caller
+}
+
+export function isIssuer(entity: Entity, caller: string) {
   return entity.issuer === caller
 }
 
@@ -45,3 +51,29 @@ export function validateInteraction(nft: NFTEntity, interaction: RmrkInteraction
     throw e
   }
 }
+
+export function isPositiveOrElseError(entity: BigInt | number, excludeZero?: boolean) {
+  if (entity < Number(excludeZero)) {
+    throw new ReferenceError(`[CONSOLIDATE isPositiveOrElseError] Entity: ${entity}`)
+  }
+}
+
+
+const isBalanceTransfer = ({section, method}: ExtraCall) => section === 'balances' && method === 'transfer'
+const canBuy = (nft: NFTEntity) => (call: ExtraCall) => isBalanceTransfer(call) && isOwner(nft, call.args[0]) && nft.price === BigInt(call.args[1]) 
+
+export function isBuyLegalOrElseError(entity: NFTEntity, extraCalls: ExtraCall[]) {
+  const result = extraCalls.some(canBuy(entity))
+  if (!result) {
+    throw new ReferenceError(`[CONSOLIDATE ILLEGAL BUY] Entity: ${entity.id} CALLS: ${JSON.stringify(extraCalls)}`)
+  }
+}
+
+// TODO: Does not work :)
+// export function isAccountValidOrElseError(caller: string) {
+//   try {
+//     decodeAddress(caller)
+//   } catch (e) {
+//     throw new ReferenceError(`[CONSOLIDATE Invalid account] ${caller}`)
+//   }
+// }
