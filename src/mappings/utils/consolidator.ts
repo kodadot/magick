@@ -1,5 +1,6 @@
 import { RmrkInteraction } from './types'
 import { CollectionEntity, NFTEntity } from '../../types'
+import { ExtraCall } from './extract'
 // import { decodeAddress } from '@polkadot/util-crypto'
 type Entity = CollectionEntity | NFTEntity
 
@@ -54,6 +55,17 @@ export function validateInteraction(nft: NFTEntity, interaction: RmrkInteraction
 export function isPositiveOrElseError(entity: BigInt | number, excludeZero?: boolean) {
   if (entity < Number(excludeZero)) {
     throw new ReferenceError(`[CONSOLIDATE isPositiveOrElseError] Entity: ${entity}`)
+  }
+}
+
+
+const isBalanceTransfer = ({section, method}: ExtraCall) => section === 'balances' && method === 'transfer'
+const canBuy = (nft: NFTEntity) => (call: ExtraCall) => isBalanceTransfer(call) && isOwner(nft, call.args[0]) && nft.price === BigInt(call.args[1]) 
+
+export function isBuyLegalOrElseError(entity: NFTEntity, extraCalls: ExtraCall[]) {
+  const result = extraCalls.some(canBuy(entity))
+  if (!result) {
+    throw new ReferenceError(`[CONSOLIDATE ILLEGAL BUY] Entity: ${entity.id} CALLS: ${JSON.stringify(extraCalls)}`)
   }
 }
 

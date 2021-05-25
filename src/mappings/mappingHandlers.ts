@@ -3,7 +3,7 @@ import { SubstrateExtrinsic } from "@subql/types";
 import { getRemarksFrom, RemarkResult } from './utils';
 import { Collection, eventFrom, getNftId, NFT, RmrkEvent, RmrkInteraction } from './utils/types';
 import NFTUtils, { hexToString } from './utils/NftUtils';
-import { canOrElseError, exists, hasMeta, isBurned, isOwnerOrElseError, isPositiveOrElseError, isTransferable, validateInteraction } from './utils/consolidator'
+import { canOrElseError, exists, hasMeta, isBurned, isBuyLegalOrElseError, isOwnerOrElseError, isPositiveOrElseError, isTransferable, validateInteraction } from './utils/consolidator'
 import { randomBytes } from 'crypto'
 import { emoteId, ensureInteraction } from './utils/helper';
 
@@ -96,6 +96,7 @@ async function buy(remark: RemarkResult) {
     canOrElseError<NFTEntity>(isBurned, nft)
     canOrElseError<NFTEntity>(isTransferable, nft, true)
     isPositiveOrElseError(nft.price, true)
+    isBuyLegalOrElseError(nft, remark.extra || [])
     nft.currentOwner = remark.caller
     nft.price = BigInt(0)
     nft.events.push(eventFrom(RmrkEvent.BUY, remark, remark.caller))
