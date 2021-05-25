@@ -184,7 +184,9 @@ async function emote(remark: RemarkResult ) {
     canOrElseError<RmrkInteraction>(hasMeta, interaction, true)
     const nft = await NFTEntity.get(interaction.id)
     canOrElseError<NFTEntity>(exists, nft, true)
-    let emote = await Emote.get(interaction.id)
+    canOrElseError<NFTEntity>(isBurned, nft)
+    const id = emoteId(interaction, remark.caller)
+    let emote = await Emote.get(id)
 
     if (exists(emote)) {
       await Emote.remove(emote.id)
@@ -192,10 +194,10 @@ async function emote(remark: RemarkResult ) {
     }
 
     emote = Emote.create({
-      id: emoteId(interaction, remark.caller),
+      id,
       nftId: interaction.id,
       caller: remark.caller,
-      value: interaction
+      value: interaction.metadata
     })
 
     await emote.save();
