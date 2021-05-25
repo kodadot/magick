@@ -23,7 +23,7 @@ async function mint(remark: RemarkResult) {
     final.symbol = collection.symbol.trim()
     final.blockNumber = BigInt(remark.blockNumber)
     final.metadata = collection.metadata
-    final.events = [eventFrom(RmrkEvent.MINT, remark.blockNumber, remark.caller, new Date(), '')]
+    final.events = [eventFrom(RmrkEvent.MINT, remark, '')]
 
     logger.info(`SAVED [COLLECTION] ${final.id}`)
     await final.save()
@@ -55,7 +55,7 @@ async function mintNFT(remark: RemarkResult) {
     final.sn = nft.sn
     final.metadata = nft.metadata
     final.price = BigInt(0) 
-    final.events = [eventFrom(RmrkEvent.MINTNFT, remark.blockNumber, remark.caller, new Date(), '')]
+    final.events = [eventFrom(RmrkEvent.MINTNFT, remark, '')]
     
     logger.info(`SAVED [MINT] ${final.id}`)
     await final.save()
@@ -76,7 +76,7 @@ async function send(remark: RemarkResult) {
 
     nft.currentOwner = interaction.metadata
     nft.price = BigInt(0)
-    nft.events.push(eventFrom(RmrkEvent.SEND, remark.blockNumber, remark.caller, new Date(), interaction.metadata))
+    nft.events.push(eventFrom(RmrkEvent.SEND, remark, interaction.metadata))
     await nft.save()
 
   } catch (e) {
@@ -96,7 +96,7 @@ async function buy(remark: RemarkResult) {
     canOrElseError<NFTEntity>(isTransferable, nft, true)
     nft.currentOwner = remark.caller
     nft.price = BigInt(0)
-    nft.events.push(eventFrom(RmrkEvent.BUY, remark.blockNumber, remark.caller, new Date(), remark.caller))
+    nft.events.push(eventFrom(RmrkEvent.BUY, remark, remark.caller))
     await nft.save();
 
   } catch (e) {
@@ -122,7 +122,7 @@ async function consume(remark: RemarkResult ) {
     isOwnerOrElseError(nft, remark.caller)
     nft.price = BigInt(0)
     nft.burned = true;
-    nft.events.push(eventFrom(RmrkEvent.CONSUME, remark.blockNumber, remark.caller, new Date(), ''))
+    nft.events.push(eventFrom(RmrkEvent.CONSUME, remark, ''))
     await nft.save();
 
   } catch (e) {
@@ -142,7 +142,7 @@ async function list(remark: RemarkResult ) {
     const price = BigInt(interaction.metadata)
     isPositiveOrElseError(price)
     nft.price = price
-    nft.events.push(eventFrom(RmrkEvent.LIST, remark.blockNumber, remark.caller, new Date(), interaction.metadata))
+    nft.events.push(eventFrom(RmrkEvent.LIST, remark, interaction.metadata))
     await nft.save();
 
   } catch (e) {
@@ -167,7 +167,7 @@ async function changeIssuer(remark: RemarkResult ) {
     canOrElseError<CollectionEntity>(exists, collection, true)
     isOwnerOrElseError(collection, remark.caller)
     collection.currentOwner = interaction.metadata
-    collection.events.push(eventFrom(RmrkEvent.CHANGEISSUER, remark.blockNumber, remark.caller, new Date(),  interaction.metadata))
+    collection.events.push(eventFrom(RmrkEvent.CHANGEISSUER, remark, interaction.metadata))
     await collection.save();
   } catch (e) {
     logger.warn(`[CHANGEISSUER] ${e.message} ${JSON.stringify(interaction)}`)

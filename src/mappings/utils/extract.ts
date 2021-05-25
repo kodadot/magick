@@ -1,5 +1,7 @@
 import { Call as TCall } from "@polkadot/types/interfaces";
 import { EventRecord } from '@polkadot/types/interfaces';
+import { Moment } from '@polkadot/types/interfaces';
+import { Compact } from '@polkadot/types';
 import { SubstrateExtrinsic } from "@subql/types";
 const PREFIXES = ['0x726d726b', '0x524d524b']
 import { encodeAddress } from "@polkadot/util-crypto";
@@ -8,6 +10,7 @@ export interface RemarkResult {
   value: string;
   caller: string;
   blockNumber: string;
+  timestamp: Date;
 }
 
 export interface RemarkResultEntity extends RemarkResult {
@@ -46,12 +49,14 @@ export const getRemarksFrom = (extrinsic: SubstrateExtrinsic): RemarkResult[] =>
 
   const signer = extrinsic.extrinsic.signer.toString();
   const blockNumber = extrinsic.block.block.header.number.toString()
+  const timestamp = extrinsic.block.timestamp;
 
   if (isSystemRemark(extrinsic.extrinsic.method as TCall)) {
     return [{
       value: extrinsic.extrinsic.args.toString(),
       caller: signer,
-      blockNumber
+      blockNumber,
+      timestamp
     }]
   }
 
@@ -60,15 +65,15 @@ export const getRemarksFrom = (extrinsic: SubstrateExtrinsic): RemarkResult[] =>
       return [];
     }
 
-    return processBatch(extrinsic.extrinsic.method.args[0] as unknown as TCall[], signer, blockNumber)
+    return processBatch(extrinsic.extrinsic.method.args[0] as unknown as TCall[], signer, blockNumber, timestamp)
   }
 
   return [];
 }
 
 
-export const processBatch = (calls: TCall[], caller: string, blockNumber: string): RemarkResult[] => {
+export const processBatch = (calls: TCall[], caller: string, blockNumber: string, timestamp: Date): RemarkResult[] => {
   return calls
   .filter(call => isSystemRemark(call))
-  .map(call => ({ value: call.args.toString(), caller, blockNumber }))
+  .map(call => ({ value: call.args.toString(), caller, blockNumber, timestamp }))
 }
