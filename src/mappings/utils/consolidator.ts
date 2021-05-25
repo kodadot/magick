@@ -19,6 +19,10 @@ export function hasMeta(nft: RmrkInteraction): nft is RmrkInteraction  {
 }
 
 export function isOwner(entity: Entity, caller: string) {
+  return entity.currentOwner === caller
+}
+
+export function isIssuer(entity: Entity, caller: string) {
   return entity.issuer === caller
 }
 
@@ -43,5 +47,11 @@ export function validateInteraction(nft: NFTEntity, interaction: RmrkInteraction
     canOrElseError<NFTEntity>(isTransferable, nft, true)
   } catch (e) {
     throw e
+  }
+}
+
+export function isPositiveOrElseError(entity: BigInt | number) {
+  if (entity < 0 ) {
+    throw new ReferenceError(`[CONSOLIDATE isPositiveOrElseError] Entity: ${entity}`)
   }
 }

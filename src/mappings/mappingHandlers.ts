@@ -1,10 +1,11 @@
-import {CollectionEntity, FailedEntity, NFTEntity, RemarkEntity} from "../types";
+import {CollectionEntity, Emote, FailedEntity, NFTEntity, RemarkEntity} from "../types";
 import { SubstrateExtrinsic } from "@subql/types";
 import { getRemarksFrom, RemarkResult } from './utils';
 import { Collection, eventFrom, getNftId, NFT, RmrkEvent, RmrkInteraction } from './utils/types';
 import NFTUtils, { hexToString } from './utils/NftUtils';
-import { canOrElseError, exists, hasMeta, isBurned, isOwner, isOwnerOrElseError, isTransferable, validateInteraction } from './utils/consolidator'
+import { canOrElseError, exists, hasMeta, isBurned, isOwner, isOwnerOrElseError, isPositiveOrElseError, isTransferable, validateInteraction } from './utils/consolidator'
 import { randomBytes } from 'crypto'
+import { emoteId, ensureInteraction } from './utils/helper';
 
 async function mint(remark: RemarkResult) {
   let collection = null
@@ -21,6 +22,7 @@ async function mint(remark: RemarkResult) {
     final.symbol = collection.symbol.trim()
     final.blockNumber = BigInt(remark.blockNumber)
     final.metadata = collection.metadata
+    final.events = [eventFrom(RmrkEvent.MINT, remark.blockNumber, remark.caller, new Date(), '')]
 
     logger.info(`SAVED [COLLECTION] ${final.id}`)
     await final.save()
@@ -48,12 +50,11 @@ async function mintNFT(remark: RemarkResult) {
     final.name = nft.name
     final.instance = nft.instance
     final.transferable = nft.transferable
-    final.collection = nft.collection
+    final.collectionId = nft.collection
     final.sn = nft.sn
     final.metadata = nft.metadata
     final.price = BigInt(0) 
     final.events = [eventFrom(RmrkEvent.MINTNFT, remark.blockNumber, remark.caller, new Date(), '')]
-    // final.emotesId = []
     
     logger.info(`SAVED [MINT] ${final.id}`)
     await final.save()
@@ -67,7 +68,7 @@ async function send(remark: RemarkResult) {
   let interaction = null
 
   try {
-    interaction = NFTUtils.unwrap(remark.value) as RmrkInteraction
+    interaction = ensureInteraction(NFTUtils.unwrap(remark.value) as RmrkInteraction)
     const nft = await NFTEntity.get(interaction.id)
     validateInteraction(nft, interaction)
     isOwnerOrElseError(nft, remark.caller)
@@ -81,18 +82,13 @@ async function send(remark: RemarkResult) {
     logger.warn(`[SEND] ${e.message} ${JSON.stringify(interaction)}`)
     await logFail(JSON.stringify(interaction), e.message, RmrkEvent.SEND)
   }
-  // exists
-  // not burned
-  // transferable
-  // has meta
-  // is owner
 }
 
 async function buy(remark: RemarkResult) {
   let interaction = null
   
   try {
-    interaction = NFTUtils.unwrap(remark.value) as RmrkInteraction
+    interaction = ensureInteraction(NFTUtils.unwrap(remark.value) as RmrkInteraction)
     const nft = await NFTEntity.get(interaction.id)
     canOrElseError<NFTEntity>(exists, nft, true)
     canOrElseError<NFTEntity>(isBurned, nft)
@@ -117,7 +113,7 @@ async function consume(remark: RemarkResult ) {
   let interaction = null
 
   try {
-    interaction = NFTUtils.unwrap(remark.value) as RmrkInteraction
+    interaction = ensureInteraction(NFTUtils.unwrap(remark.value) as RmrkInteraction)
     const nft = await NFTEntity.get(interaction.id)
     canOrElseError<NFTEntity>(exists, nft, true)
     canOrElseError<NFTEntity>(isBurned, nft)
@@ -126,30 +122,25 @@ async function consume(remark: RemarkResult ) {
     nft.price = BigInt(0)
     nft.burned = true;
     nft.events.push(eventFrom(RmrkEvent.CONSUME, remark.blockNumber, remark.caller, new Date(), ''))
-
-    // add burn event
     await nft.save();
 
   } catch (e) {
     logger.warn(`[CONSUME] ${e.message} ${JSON.stringify(interaction)}`)
     await logFail(JSON.stringify(interaction), e.message, RmrkEvent.CONSUME)
   }
-  // exists
-  // not burned
-  // transferable
-  // has meta
-  // is owner
 }
 
 async function list(remark: RemarkResult ) {
   let interaction = null
 
   try {
-    interaction = NFTUtils.unwrap(remark.value) as RmrkInteraction
+    interaction = ensureInteraction(NFTUtils.unwrap(remark.value) as RmrkInteraction)
     const nft = await NFTEntity.get(interaction.id)
     validateInteraction(nft, interaction)
     isOwnerOrElseError(nft, remark.caller)
-    nft.price = BigInt(interaction.metadata)
+    const price = BigInt(interaction.metadata)
+    isPositiveOrElseError(price)
+    nft.price = price
     nft.events.push(eventFrom(RmrkEvent.LIST, remark.blockNumber, remark.caller, new Date(), interaction.metadata))
     await nft.save();
 
@@ -169,11 +160,14 @@ async function changeIssuer(remark: RemarkResult ) {
   let interaction = null
   
   try {
-    interaction = NFTUtils.unwrap(remark.value) as RmrkInteraction
+    interaction = ensureInteraction(NFTUtils.unwrap(remark.value) as RmrkInteraction)
     canOrElseError<RmrkInteraction>(hasMeta, interaction, true)
     const collection = await CollectionEntity.get(interaction.id)
     canOrElseError<CollectionEntity>(exists, collection, true)
     isOwnerOrElseError(collection, remark.caller)
+    collection.currentOwner = interaction.metadata
+    collection.events.push(eventFrom(RmrkEvent.CHANGEISSUER, remark.blockNumber, remark.caller, new Date(),  interaction.metadata))
+    await collection.save();
   } catch (e) {
     logger.warn(`[CHANGEISSUER] ${e.message} ${JSON.stringify(interaction)}`)
     await logFail(JSON.stringify(interaction), e.message, RmrkEvent.CHANGEISSUER)
@@ -186,10 +180,25 @@ async function emote(remark: RemarkResult ) {
   let interaction = null
 
   try {
-    interaction = NFTUtils.unwrap(remark.value) as RmrkInteraction
+    interaction = ensureInteraction(NFTUtils.unwrap(remark.value) as RmrkInteraction)
     canOrElseError<RmrkInteraction>(hasMeta, interaction, true)
     const nft = await NFTEntity.get(interaction.id)
     canOrElseError<NFTEntity>(exists, nft, true)
+    let emote = await Emote.get(interaction.id)
+
+    if (exists(emote)) {
+      await Emote.remove(emote.id)
+      return;
+    }
+
+    emote = Emote.create({
+      id: emoteId(interaction, remark.caller),
+      nftId: interaction.id,
+      caller: remark.caller,
+      value: interaction
+    })
+
+    await emote.save();
 
   } catch (e) {
     logger.warn(`[EMOTE] ${e.message}`)
@@ -262,7 +271,6 @@ export async function handleRemark(extrinsic: SubstrateExtrinsic): Promise<void>
           await send(remark)
           break;
         case RmrkEvent.BUY:
-          logger.info(`[BUY] ${remark.blockNumber}::${hexToString(remark.value)}`)
           await buy(remark)
           break;
         case RmrkEvent.CONSUME:
