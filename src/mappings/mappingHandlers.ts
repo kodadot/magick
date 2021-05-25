@@ -120,7 +120,6 @@ async function consume(remark: RemarkResult ) {
     const nft = await NFTEntity.get(interaction.id)
     canOrElseError<NFTEntity>(exists, nft, true)
     canOrElseError<NFTEntity>(isBurned, nft)
-    canOrElseError<NFTEntity>(isTransferable, nft, true)
     isOwnerOrElseError(nft, remark.caller)
     nft.price = BigInt(0)
     nft.burned = true;
