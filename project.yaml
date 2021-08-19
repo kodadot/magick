@@ -1,9 +1,10 @@
-specVersion: 0.0.1
+specVersion: 0.0.2
 description: None
 repository: ''
 schema: ./schema.graphql
 network:
   endpoint: wss://kusama.api.onfinality.io/public-ws
+  dictionary: https://api.subquery.network/sq/subquery/dictionary-kusama
 definitions:
   mapping: &mymapping
     handlers:
