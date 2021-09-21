@@ -21,8 +21,8 @@
   "license": "MIT",
   "devDependencies": {
     "@polkadot/api": "^6.0.5",
-    "@subql/cli": "^0.12.0",
-    "@subql/types": "^0.8.4",
+    "@subql/cli": "latest",
+    "@subql/types": "latest",
     "typescript": "^4.4.3"
   },
   "dependencies": {}
