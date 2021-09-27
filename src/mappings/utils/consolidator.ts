@@ -60,7 +60,7 @@ export function isPositiveOrElseError(entity: BigInt | number, excludeZero?: boo
 
 
 const isBalanceTransfer = ({section, method}: ExtraCall) => section === 'balances' && method === 'transfer'
-const canBuy = (nft: NFTEntity) => (call: ExtraCall) => isBalanceTransfer(call) && isOwner(nft, call.args[0]) && nft.price === BigInt(call.args[1]) 
+const canBuy = (nft: NFTEntity) => (call: ExtraCall) => isBalanceTransfer(call) && isOwner(nft, call.args[0]) && BigInt(call.args[1]) >= BigInt(nft.price)
 
 export function isBuyLegalOrElseError(entity: NFTEntity, extraCalls: ExtraCall[]) {
   const result = extraCalls.some(canBuy(entity))
