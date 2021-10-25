@@ -55,6 +55,7 @@ async function mintNFT(remark: RemarkResult) {
     final.sn = nft.sn
     final.metadata = nft.metadata
     final.price = BigInt(0) 
+    final.burned = false
     final.events = [eventFrom(RmrkEvent.MINTNFT, remark, '')]
     
     logger.info(`SAVED [MINT] ${final.id}`)
