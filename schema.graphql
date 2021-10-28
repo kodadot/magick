@@ -38,7 +38,7 @@ type NFTEntity @entity {
   metadata: String
   currentOwner: String
   price: BigInt
-  burned: Boolean!
+  burned: Boolean
   blockNumber: BigInt
   events: [Event]
   emotes: [Emote] @derivedFrom(field: "nft")
