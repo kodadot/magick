@@ -1,9 +1,9 @@
-import { CollectionEntity, Emote, FailedEntity, NFTEntity, RemarkEntity } from "../types";
+import { CollectionEntity, Emote, FailedEntity, NFTEntity, RemarkEntity, Resource } from "../types";
 import { SubstrateExtrinsic } from "@subql/types";
 import { getRemarksFrom, RemarkResult } from './utils';
-import { Collection, eventFrom, getNftId, NFT, RmrkEvent, RmrkInteraction } from './utils/types';
+import { Collection, eventFrom, getNftId, NFT, RmrkAcceptInteraction, RmrkAcceptType, RmrkEvent, RmrkInteraction, RmrkSendInteraction, RmrkSpecVersion } from './utils/types';
 import NFTUtils, { hexToString } from './utils/NftUtils';
-import { canOrElseError, exists, hasMeta, isBurned, isBuyLegalOrElseError, isOwnerOrElseError, isPositiveOrElseError, isTransferable, validateInteraction } from './utils/consolidator'
+import { canOrElseError, exists, hasMeta, isBurned, isBuyLegalOrElseError, isOwner, isOwnerOrElseError, isPositiveOrElseError, isTransferable, validateInteraction } from './utils/consolidator'
 import { randomBytes } from 'crypto'
 import { emoteId, ensureInteraction } from './utils/helper';
 
@@ -71,18 +71,29 @@ async function mintNFT(remark: RemarkResult) {
 async function send(remark: RemarkResult) {
   let interaction = null
 
-  try {
-    interaction = ensureInteraction(NFTUtils.unwrap(remark.value) as RmrkInteraction)
-    const nft = await NFTEntity.get(interaction.id)
-    validateInteraction(nft, interaction)
-    isOwnerOrElseError(nft, remark.caller)
-    // isAccountValidOrElseError(interaction.metadata)
 
-    nft.currentOwner = interaction.metadata
-    nft.price = BigInt(0)
-    nft.events.push(eventFrom(RmrkEvent.SEND, remark, interaction.metadata))
-    nft.updatedAt = remark.timestamp
-    await nft.save()
+  try {
+    interaction = (NFTUtils.unwrap_SEND(remark.value) as RmrkSendInteraction)
+
+    if (interaction.version === RmrkSpecVersion.V1) {
+      // 1.0.0  auto ACCEPT
+      const nft = await NFTEntity.get(interaction.id)
+      validateInteraction(nft, interaction)
+      isOwnerOrElseError(nft, remark.caller)
+      // isAccountValidOrElseError(interaction.metadata)
+
+      nft.currentOwner = interaction.metadata
+      nft.price = BigInt(0)
+      nft.events.push(eventFrom(RmrkEvent.SEND, remark, interaction.metadata))
+      nft.updatedAt = remark.timestamp
+      await nft.save()
+    }
+    else if (interaction.version === RmrkSpecVersion.V2) {
+      //TODO 2.0.0
+      // same owner  =>auto ACCEPT
+      // add children and pending=true
+
+    }
 
   } catch (e) {
     logger.warn(`[SEND] ${e.message} ${JSON.stringify(interaction)}`)
@@ -118,7 +129,7 @@ async function buy(remark: RemarkResult) {
   // enough money ?
 }
 
-async function consume(remark: RemarkResult) {
+async function consumeOrBurn(remark: RemarkResult, eventAlias: RmrkEvent) {
   let interaction = null
 
   try {
@@ -129,13 +140,13 @@ async function consume(remark: RemarkResult) {
     isOwnerOrElseError(nft, remark.caller)
     nft.price = BigInt(0)
     nft.burned = true;
-    nft.events.push(eventFrom(RmrkEvent.CONSUME, remark, ''))
+    nft.events.push(eventFrom(eventAlias, remark, ''))
     nft.updatedAt = remark.timestamp
     await nft.save();
 
   } catch (e) {
-    logger.warn(`[CONSUME] ${e.message} ${JSON.stringify(interaction)}`)
-    await logFail(JSON.stringify(interaction), e.message, RmrkEvent.CONSUME)
+    logger.warn(`[${eventAlias}] ${e.message} ${JSON.stringify(interaction)}`)
+    await logFail(JSON.stringify(interaction), e.message, eventAlias)
   }
 }
 
@@ -263,10 +274,100 @@ export async function handleCall(extrinsic: SubstrateExtrinsic): Promise<void> {
 }
 
 async function accept(remark: RemarkResult) {
-  //TODO
+
+  let interaction: RmrkAcceptInteraction = null
+  try {
+    interaction = NFTUtils.unwrap_ACCEPT(remark.value) as RmrkAcceptInteraction
+    const nft = await NFTEntity.get(interaction.id1)
+    canOrElseError<NFTEntity>(exists, nft, true)
+    canOrElseError<NFTEntity>(isBurned, nft)
+
+    let entity = interaction.entity;
+    if (entity === RmrkAcceptType.RES) {
+      let resId = interaction.id2;
+      if (nft.resources) {
+        for (let index = 0; index < nft.resources.length; index++) {
+          const res = nft.resources[index];
+          if (res.id === resId) {
+            res.pending = false;
+          }
+        }
+      }
+    }
+    else if (entity === RmrkAcceptType.NFT) {
+      let nftChildId = interaction.id2;
+      if (nft.children) {
+        for (let index = 0; index < nft.children.length; index++) {
+          const child = nft.children[index];
+          if (child.id === nftChildId) {
+            child.pending = false;
+          }
+        }
+      }
+    }
+
+    nft.events.push(eventFrom(RmrkEvent.ACCEPT, remark, ''));
+    nft.updatedAt = remark.timestamp;
+
+    await nft.save();
+
+  } catch (e) {
+    logger.warn(`[ACCEPT] ${e.message} ${JSON.stringify(interaction)}`);
+    await logFail(JSON.stringify(interaction), e.message, RmrkEvent.ACCEPT);
+  }
+
 }
 async function resAdd(remark: RemarkResult) {
-  //TODO
+
+  let interaction = null
+  try {
+    interaction = ensureInteraction(NFTUtils.unwrap(remark.value) as RmrkInteraction)
+    const nft = await NFTEntity.get(interaction.id)
+    canOrElseError<NFTEntity>(exists, nft, true)
+    canOrElseError<NFTEntity>(isBurned, nft)
+
+    let metadataJson = NFTUtils.decodeRmrk(interaction.metadata);
+    let json = JSON.parse(metadataJson);
+    if (!json) {
+      throw new TypeError(`RMRK: Unable to parse metadata as JSON object: ${interaction.metadata}`)
+    }
+
+    let resId = json.id || '';
+    let resSrc = json.src || '';
+    let resMetadata = json.metadata || '';
+
+    if (!resId) {
+      throw new TypeError(`RMRK: invalid resource id`)
+    }
+
+    if (!nft.priority || nft.priority.length == 0) {
+      nft.priority = [];
+    }
+    nft.priority.push(resId);
+
+    let newResource: Resource = {
+      id: resId,
+      src: resSrc,
+      metadata: resMetadata,
+      pending: true   // enter a pending state and MUST be accepted with a ACCEPT 
+    };
+    if (isOwner(nft, remark.caller)) {
+      //If the issuer is also the owner of this NFT, this interaction also counts as a ACCEPT automatically.
+      //auto ACCEPT
+      newResource.pending = false;
+    }
+
+    nft.resources.push(newResource);
+    nft.events.push(eventFrom(RmrkEvent.RESADD, remark, ''));
+    nft.updatedAt = remark.timestamp;
+
+    await nft.save();
+
+  } catch (e) {
+    logger.warn(`[RESADD] ${e.message} ${JSON.stringify(interaction)}`);
+    await logFail(JSON.stringify(interaction), e.message, RmrkEvent.RESADD);
+  }
+
 }
 
 export async function handleRemark(extrinsic: SubstrateExtrinsic): Promise<void> {
@@ -291,7 +392,10 @@ export async function handleRemark(extrinsic: SubstrateExtrinsic): Promise<void>
           await buy(remark)
           break;
         case RmrkEvent.CONSUME:
-          await consume(remark)
+          await consumeOrBurn(remark, RmrkEvent.CONSUME);
+          break;
+        case RmrkEvent.BURN:
+          await consumeOrBurn(remark, RmrkEvent.BURN);
           break;
         case RmrkEvent.LIST:
           await list(remark)
@@ -300,13 +404,15 @@ export async function handleRemark(extrinsic: SubstrateExtrinsic): Promise<void>
           await changeIssuer(remark)
           break;
         case RmrkEvent.EMOTE:
-          await emote(remark)
+          await emote(remark);
           break;
+
+        //Standard 2.0.0  
         case RmrkEvent.ACCEPT:
-          await accept(remark)
+          await accept(remark);
           break;
         case RmrkEvent.RESADD:
-          await resAdd(remark)
+          await resAdd(remark);
           break;
 
         default:

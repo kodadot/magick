@@ -48,6 +48,24 @@ export interface RmrkInteraction {
   id: string;
   metadata?: string;
 }
+export enum RmrkSpecVersion {
+  V1 = "1.0.0",
+  V2 = "2.0.0"
+}
+export enum RmrkAcceptType {
+  RES = "RES",
+  NFT = "NFT"
+}
+export interface RmrkAcceptInteraction {
+  id1: string;
+  entity: string;
+  id2: string;
+}
+export interface RmrkSendInteraction {
+  version: string;
+  id: string;
+  recipient: string;
+}
 
 export interface Collection {
   version: string;

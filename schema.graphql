@@ -44,6 +44,27 @@ type NFTEntity @entity {
   emotes: [Emote] @derivedFrom(field: "nft")
   createdAt: Date!
   updatedAt: Date! @index
+
+  priority: [String]
+  resources: [Resource]
+  children: [NFTChild]
+}
+type Resource @jsonField {
+  pending: Boolean!
+  id: String!
+  src: String
+  metadata: String
+  base: String
+  slot: String
+  license: String
+  thumb: String
+  parts: [String]
+  theme: String
+}
+type NFTChild @jsonField {
+  id: String!
+  equipped: String!
+  pending: Boolean!
 }
 
 type Event @jsonField {

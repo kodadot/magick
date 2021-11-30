@@ -1,4 +1,5 @@
-import { RmrkEvent, RMRK, RmrkInteraction } from './types';
+import { trim } from './helper';
+import { RmrkEvent, RMRK, RmrkInteraction, RmrkAcceptInteraction, RmrkSendInteraction } from './types';
 const SQUARE = '::'
 
 export function isHex(text: string) {
@@ -26,7 +27,7 @@ class NFTUtils {
         event: NFTUtils.getAction(rmrkString),
         view: NFTUtils.unwrap(rmrkString)
       }
-    } catch(e) {
+    } catch (e) {
       throw e
     }
   }
@@ -39,7 +40,7 @@ class NFTUtils {
     return NFTUtils.convert(NFTUtils.decodeRmrk(rmrkString))
   }
 
-  public static getAction = (rmrkString: string): RmrkEvent  => {
+  public static getAction = (rmrkString: string): RmrkEvent => {
     if (RmrkActionRegex.MINT.test(rmrkString)) {
       return RmrkEvent.MINT
     }
@@ -71,7 +72,12 @@ class NFTUtils {
     if (RmrkActionRegex.EMOTE.test(rmrkString)) {
       return RmrkEvent.EMOTE
     }
-
+    if (RmrkActionRegex.RESADD.test(rmrkString)) {
+      return RmrkEvent.RESADD
+    }
+    if (RmrkActionRegex.ACCEPT.test(rmrkString)) {
+      return RmrkEvent.ACCEPT
+    }
     throw new EvalError(`[NFTUtils] Unable to get action from ${rmrkString}`);
 
   }
@@ -102,7 +108,54 @@ class NFTUtils {
     }
   }
 
+  public static unwrap_SEND(rmrkString: string): any {
+    try {
+
+      const split = NFTUtils.splitRmrkString(rmrkString);
+      if (split.length >= 5) {
+        return ({
+          version: trim(split[2]),
+          id: trim(split[3]),
+          recipient: trim(split[4])
+        } as RmrkSendInteraction)
+      }
+      throw new TypeError(`RMRK: Unable to unwrap SEND object ${rmrkString}`)
+    } catch (e) {
+      throw e
+    }
+  }
+  public static unwrap_ACCEPT(rmrkString: string): any {
+    try {
+
+      const split = NFTUtils.splitRmrkString(rmrkString);
+      if (split.length >= 6) {
+        return ({
+          id1: trim(split[3]),
+          entity: trim(split[4]),
+          id2: trim(split[5])
+        } as RmrkAcceptInteraction)
+      }
+      throw new TypeError(`RMRK: Unable to unwrap ACCEPT object ${rmrkString}`)
+    } catch (e) {
+      throw e
+    }
+  }
+
+
+  private static splitRmrkString(rmrkString: string): string[] {
+    const rmrk = isHex(rmrkString) ? hexToString(rmrkString) : rmrkString
+    try {
+      const decoded = decodeURIComponent(rmrk)
+      const split = decoded.split(SQUARE)
+
+      return split;
+    } catch (e) {
+      throw e
+    }
+  }
+
 }
+
 
 export class RmrkActionRegex {
   static MINTNFT = /^[rR][mM][rR][kK]::MINTNFT::/;
@@ -113,6 +166,9 @@ export class RmrkActionRegex {
   static CHANGEISSUER = /^[rR][mM][rR][kK]::CHANGEISSUER::/;
   static LIST = /^[rR][mM][rR][kK]::LIST::/;
   static EMOTE = /^[rR][mM][rR][kK]::EMOTE::/;
+
+  static RESADD = /^[rR][mM][rR][kK]::RESADD::/;
+  static ACCEPT = /^[rR][mM][rR][kK]::ACCEPT::/;
 
 }
 
