@@ -1,7 +1,7 @@
 import { CollectionEntity, Emote, FailedEntity, NFTChild, NFTEntity, RemarkEntity, Resource } from "../types";
 import { SubstrateExtrinsic } from "@subql/types";
 import { getRemarksFrom, RemarkResult } from './utils';
-import { Collection, eventFrom, getNftId, NFT, RmrkAcceptInteraction, RmrkAcceptType, RmrkEvent, RmrkInteraction, RmrkSendInteraction, RmrkSpecVersion } from './utils/types';
+import { Collection, eventFrom, getNftId, getNftId_V01, NFT, RmrkAcceptInteraction, RmrkAcceptType, RmrkEvent, RmrkInteraction, RmrkSendInteraction, RmrkSpecVersion } from './utils/types';
 import NFTUtils, { hexToString } from './utils/NftUtils';
 import { canOrElseError, exists, hasMeta, isBurned, isBuyLegalOrElseError, isOwner, isOwnerOrElseError, isPositiveOrElseError, isTransferable, validateNFT, validateMeta } from './utils/consolidator'
 import { randomBytes } from 'crypto'
@@ -39,9 +39,10 @@ async function collection_V2(remark: RemarkResult) {
 
 
 async function mintNFT_V1(remark: RemarkResult) {
-  let nft = null
+  let nft = null;
+  const specVersion: RmrkSpecVersion = NFTUtils.getRmrkSpecVersion(remark.value)
+
   try {
-    const specVersion: RmrkSpecVersion = NFTUtils.getRmrkSpecVersion(remark.value)
 
     nft = NFTUtils.unwrap(remark.value) as NFT;
     canOrElseError<string>(exists, nft.collection, true);
@@ -72,10 +73,10 @@ async function mintNFT_V1(remark: RemarkResult) {
     newNFT.createdAt = remark.timestamp;
     newNFT.updatedAt = remark.timestamp;
 
-    logger.info(`SAVED [MINT_NFT V1 SIMPLE] ${newNFT.id}`)
+    logger.info(`SAVED [MINT_NFT ${specVersion} SIMPLE] ${newNFT.id}`)
     await newNFT.save()
   } catch (e) {
-    logger.error(`[MINT_NFT V1] ${e.message} ${JSON.stringify(nft)} ${JSON.stringify(remark)}`)
+    logger.error(`[MINT_NFT ${specVersion} ] ${e.message} ${JSON.stringify(nft)} ${JSON.stringify(remark)}`)
     await logFail(JSON.stringify(nft), e.message, RmrkEvent.MINTNFT)
   }
 }
@@ -595,7 +596,5 @@ export async function handleRemark(extrinsic: SubstrateExtrinsic): Promise<void>
 }
 
 
-function getNftId_V01(nft: any): any {
-  throw new Error("Function not implemented.");
-}
+
 
