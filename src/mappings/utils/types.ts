@@ -23,7 +23,7 @@ export enum RmrkEvent {
   //Event for new features in Standard 2.0.0 
   ACCEPT = 'ACCEPT',
   RESADD = 'RESADD',
- 
+
 
   //misc
   EQUIP = 'EQUIP',
@@ -36,7 +36,9 @@ export enum RmrkEvent {
 export const getNftId = (nft: any, blocknumber?: string | number): string => {
   return `${blocknumber ? blocknumber + '-' : ''}${nft.collection}-${nft.instance || nft.name}-${nft.sn}`
 }
-
+export const getNftId_V01 = (nft: any): string => {
+  return `${nft.collection}-${nft.instance || nft.name}-${nft.sn}`
+}
 export function eventFrom(interaction: RmrkEvent, { blockNumber, caller, timestamp }: RemarkResult, meta: string): Event {
   return {
     interaction,
@@ -66,7 +68,6 @@ export interface RmrkAcceptInteraction {
   id2: string;
 }
 export interface RmrkSendInteraction {
-  version: string;
   id: string;
   recipient: string;
 }

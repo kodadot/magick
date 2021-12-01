@@ -40,17 +40,21 @@ class NFTUtils {
     return NFTUtils.convert(NFTUtils.decodeRmrk(rmrkString))
   }
 
-  public static getSpecVersion = (rmrkString: string): RmrkSpecVersion => {
+  public static getRmrkSpecVersion = (rmrkString: string): RmrkSpecVersion => {
     try {
       const split = NFTUtils.splitRmrkString(rmrkString);
       if (split.length >= 3) {
         let version = split[2];
 
+        if (version === RmrkSpecVersion.V1) {
+          return RmrkSpecVersion.V1;
+        }
+
         if (version === RmrkSpecVersion.V2) {
           return RmrkSpecVersion.V2;
         }
       }
-      return RmrkSpecVersion.V1; // regard Empty,V0.1 ,V1.0.0 both as V1.0.0
+      return RmrkSpecVersion.V01;
     } catch (e) {
       throw e
     }
@@ -153,7 +157,6 @@ class NFTUtils {
       const split = NFTUtils.splitRmrkString(rmrkString);
       if (split.length >= 5) {
         return ({
-          version: trim(split[2]),
           id: trim(split[3]),
           recipient: trim(split[4])
         } as RmrkSendInteraction)

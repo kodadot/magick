@@ -41,15 +41,21 @@ async function collection_V2(remark: RemarkResult) {
 async function mintNFT_V1(remark: RemarkResult) {
   let nft = null
   try {
-    nft = NFTUtils.unwrap(remark.value) as NFT
-    canOrElseError<string>(exists, nft.collection, true)
+    const specVersion: RmrkSpecVersion = NFTUtils.getRmrkSpecVersion(remark.value)
 
-    const collection = await CollectionEntity.get(nft.collection)
-    canOrElseError<CollectionEntity>(exists, collection, true)
+    nft = NFTUtils.unwrap(remark.value) as NFT;
+    canOrElseError<string>(exists, nft.collection, true);
+
+    const collection = await CollectionEntity.get(nft.collection);
+    canOrElseError<CollectionEntity>(exists, collection, true);
 
     isOwnerOrElseError(collection, remark.caller);
 
-    nft.id = getNftId(nft, remark.blockNumber);
+    if (specVersion === RmrkSpecVersion.V01) {
+      nft.id = getNftId_V01(nft);
+    } else if (specVersion === RmrkSpecVersion.V1) {
+      nft.id = getNftId(nft, remark.blockNumber);
+    }
     const newNFT = NFTEntity.create(nft);
     newNFT.issuer = remark.caller;
     newNFT.currentOwner = remark.caller;
@@ -142,12 +148,14 @@ async function send_V1(remark: RemarkResult) {
   let interaction: RmrkSendInteraction = null
 
   try {
-    interaction = (NFTUtils.unwrap_SEND(remark.value) as RmrkSendInteraction)
+    interaction = (NFTUtils.unwrap_SEND(remark.value) as RmrkSendInteraction);
+    const specVersion: RmrkSpecVersion = NFTUtils.getRmrkSpecVersion(remark.value);
+
     const currentNFT = await NFTEntity.get(interaction.id);
     validateNFT(currentNFT)
     isOwnerOrElseError(currentNFT, remark.caller)
 
-    if (interaction.version === RmrkSpecVersion.V1) {
+    if (specVersion === RmrkSpecVersion.V1 || specVersion === RmrkSpecVersion.V01) {
       //Standard 1.0.0: auto ACCEPT     
       currentNFT.currentOwner = interaction.recipient
       currentNFT.price = BigInt(0)
@@ -167,11 +175,13 @@ async function send_V2(remark: RemarkResult) {
 
   try {
     interaction = (NFTUtils.unwrap_SEND(remark.value) as RmrkSendInteraction)
+    const specVersion: RmrkSpecVersion = NFTUtils.getRmrkSpecVersion(remark.value);
+
     const currentNFT = await NFTEntity.get(interaction.id);
     validateNFT(currentNFT)
     isOwnerOrElseError(currentNFT, remark.caller)
 
-    if (interaction.version === RmrkSpecVersion.V2) {
+    if (specVersion === RmrkSpecVersion.V2) {
       // Standard 2.0.0: 
       const targetNFT = await NFTEntity.get(interaction.recipient);
 
@@ -520,7 +530,7 @@ export async function handleRemark(extrinsic: SubstrateExtrinsic): Promise<void>
     try {
       const decoded = hexToString(remark.value)
       const event: RmrkEvent = NFTUtils.getAction(decoded)
-      const specVersion: RmrkSpecVersion = NFTUtils.getSpecVersion(decoded)
+      const specVersion: RmrkSpecVersion = NFTUtils.getRmrkSpecVersion(decoded)
 
       switch (event) {
         case RmrkEvent.CREATE:
@@ -529,7 +539,7 @@ export async function handleRemark(extrinsic: SubstrateExtrinsic): Promise<void>
           }
           break;
         case RmrkEvent.MINT:
-          if (specVersion == RmrkSpecVersion.V1) {
+          if (specVersion == RmrkSpecVersion.V1 || specVersion == RmrkSpecVersion.V01) {
             await collection_V1(remark);
           }
           else {
@@ -540,7 +550,7 @@ export async function handleRemark(extrinsic: SubstrateExtrinsic): Promise<void>
           await mintNFT_V1(remark)
           break;
         case RmrkEvent.SEND:
-          if (specVersion == RmrkSpecVersion.V1) {
+          if (specVersion == RmrkSpecVersion.V1 || specVersion == RmrkSpecVersion.V01) {
             await send_V1(remark);
           }
           else if (specVersion == RmrkSpecVersion.V2) {
@@ -584,4 +594,8 @@ export async function handleRemark(extrinsic: SubstrateExtrinsic): Promise<void>
   }
 }
 
+
+function getNftId_V01(nft: any): any {
+  throw new Error("Function not implemented.");
+}
 
