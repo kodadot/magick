@@ -3,7 +3,7 @@ import { SubstrateExtrinsic } from "@subql/types";
 import { getRemarksFrom, RemarkResult } from './utils';
 import { Collection, eventFrom, getNftId, NFT, RmrkAcceptInteraction, RmrkAcceptType, RmrkEvent, RmrkInteraction, RmrkSendInteraction, RmrkSpecVersion } from './utils/types';
 import NFTUtils, { hexToString } from './utils/NftUtils';
-import { canOrElseError, exists, hasMeta, isBurned, isBuyLegalOrElseError, isOwner, isOwnerOrElseError, isPositiveOrElseError, isTransferable, validateInteraction } from './utils/consolidator'
+import { canOrElseError, exists, hasMeta, isBurned, isBuyLegalOrElseError, isOwner, isOwnerOrElseError, isPositiveOrElseError, isTransferable, validateNFT, validateMeta } from './utils/consolidator'
 import { randomBytes } from 'crypto'
 import { emoteId, ensureInteraction } from './utils/helper';
 
@@ -62,9 +62,9 @@ async function mintNFT_V1(remark: RemarkResult) {
     newNFT.metadata = nft.metadata;
     newNFT.price = BigInt(0);
     newNFT.burned = false;
-    newNFT.events = [eventFrom(RmrkEvent.MINTNFT, remark, '')]
-    newNFT.createdAt = remark.timestamp
-    newNFT.updatedAt = remark.timestamp
+    newNFT.events = [eventFrom(RmrkEvent.MINTNFT, remark, '')];
+    newNFT.createdAt = remark.timestamp;
+    newNFT.updatedAt = remark.timestamp;
 
     logger.info(`SAVED [MINT_NFT V1 SIMPLE] ${newNFT.id}`)
     await newNFT.save()
@@ -109,9 +109,11 @@ async function mintNFT_V2(remark: RemarkResult) {
     }
 
     else {
+      newNFT.currentOwner = recipient;
+
       const parentNFT = await NFTEntity.get(recipient);
       if (!parentNFT) {
-        newNFT.currentOwner = recipient; // mint nft to the specified account directly        
+        // mint nft to the specified account directly        
         logger.info(`SAVED [MINT_NFT V2 TO ACCOUNT] ${newNFT.id}`);
         await newNFT.save();
       }
@@ -122,9 +124,9 @@ async function mintNFT_V2(remark: RemarkResult) {
         }
         let newNFTChild: NFTChild = { id: newNFT.id, equipped: '', pending: false };
         parentNFT.children.push(newNFTChild);
+        parentNFT.updatedAt = remark.timestamp;
         await parentNFT.save();
 
-        newNFT.currentOwner = recipient;
         logger.info(`SAVED [MINT_NFT V2 TO NFT] ${newNFT.id}`);
         await newNFT.save();
       }
@@ -136,15 +138,14 @@ async function mintNFT_V2(remark: RemarkResult) {
   }
 }
 
-async function send(remark: RemarkResult) {
+async function send_V1(remark: RemarkResult) {
   let interaction: RmrkSendInteraction = null
 
   try {
     interaction = (NFTUtils.unwrap_SEND(remark.value) as RmrkSendInteraction)
     const currentNFT = await NFTEntity.get(interaction.id);
-    validateInteraction(currentNFT, interaction)
+    validateNFT(currentNFT)
     isOwnerOrElseError(currentNFT, remark.caller)
-    // isAccountValidOrElseError(interaction.metadata)
 
     if (interaction.version === RmrkSpecVersion.V1) {
       //Standard 1.0.0: auto ACCEPT     
@@ -154,18 +155,34 @@ async function send(remark: RemarkResult) {
       currentNFT.updatedAt = remark.timestamp
       await currentNFT.save()
     }
-    else if (interaction.version === RmrkSpecVersion.V2) {
+
+
+  } catch (e) {
+    logger.warn(`[SEND V1] ${e.message} ${JSON.stringify(interaction)}`)
+    await logFail(JSON.stringify(interaction), e.message, RmrkEvent.SEND)
+  }
+}
+async function send_V2(remark: RemarkResult) {
+  let interaction: RmrkSendInteraction = null
+
+  try {
+    interaction = (NFTUtils.unwrap_SEND(remark.value) as RmrkSendInteraction)
+    const currentNFT = await NFTEntity.get(interaction.id);
+    validateNFT(currentNFT)
+    isOwnerOrElseError(currentNFT, remark.caller)
+
+    if (interaction.version === RmrkSpecVersion.V2) {
       // Standard 2.0.0: 
       const targetNFT = await NFTEntity.get(interaction.recipient);
 
       if (!targetNFT) {
         //sending nft to account
         //same logic handle as RmrkSpecVersion.V1
-        currentNFT.currentOwner = interaction.recipient
-        currentNFT.price = BigInt(0)
-        currentNFT.events.push(eventFrom(RmrkEvent.SEND, remark, interaction.recipient))
-        currentNFT.updatedAt = remark.timestamp
-        await currentNFT.save()
+        currentNFT.currentOwner = interaction.recipient;
+        currentNFT.price = BigInt(0);
+        currentNFT.events.push(eventFrom(RmrkEvent.SEND, remark, interaction.recipient));
+        currentNFT.updatedAt = remark.timestamp;
+        await currentNFT.save();
 
       }
       else {
@@ -186,6 +203,7 @@ async function send(remark: RemarkResult) {
           equipped: ''
         };
         targetNFT.children.push(nftChild);
+        targetNFT.updatedAt = remark.timestamp;
         await targetNFT.save();
 
         let currentOwner = currentNFT.currentOwner;
@@ -202,12 +220,15 @@ async function send(remark: RemarkResult) {
               });
               if (findIndex >= 0) {
                 parent.children.splice(findIndex, 1);
+                parent.updatedAt = remark.timestamp;
                 await parent.save();
               }
             }
           }
           //update currentNFT.currentOwner =>  targetNFT.id             
           currentNFT.currentOwner = targetNFT.id;
+          currentNFT.events.push(eventFrom(RmrkEvent.SEND, remark, interaction.recipient));
+          currentNFT.updatedAt = remark.timestamp;
           await currentNFT.save();
 
         }
@@ -215,7 +236,7 @@ async function send(remark: RemarkResult) {
     }
 
   } catch (e) {
-    logger.warn(`[SEND] ${e.message} ${JSON.stringify(interaction)}`)
+    logger.warn(`[SEND V2] ${e.message} ${JSON.stringify(interaction)}`)
     await logFail(JSON.stringify(interaction), e.message, RmrkEvent.SEND)
   }
 }
@@ -275,21 +296,22 @@ async function list(remark: RemarkResult) {
   let interaction = null
 
   try {
-    interaction = ensureInteraction(NFTUtils.unwrap(remark.value) as RmrkInteraction)
-    const nft = await NFTEntity.get(interaction.id)
-    validateInteraction(nft, interaction)
-    isOwnerOrElseError(nft, remark.caller)
-    const price = BigInt(interaction.metadata)
-    isPositiveOrElseError(price)
-    nft.price = price
-    nft.events.push(eventFrom(RmrkEvent.LIST, remark, interaction.metadata))
-    nft.updatedAt = remark.timestamp
+    interaction = ensureInteraction(NFTUtils.unwrap(remark.value) as RmrkInteraction);
+    const nft = await NFTEntity.get(interaction.id);
+    validateNFT(nft);
+    validateMeta(interaction);
+    isOwnerOrElseError(nft, remark.caller);
+    const price = BigInt(interaction.metadata);
+    isPositiveOrElseError(price);
+    nft.price = price;
+    nft.events.push(eventFrom(RmrkEvent.LIST, remark, interaction.metadata));
+    nft.updatedAt = remark.timestamp;
     await nft.save();
 
   } catch (e) {
 
-    logger.warn(`[LIST] ${e.message} ${JSON.stringify(interaction)}`)
-    await logFail(JSON.stringify(interaction), e.message, RmrkEvent.LIST)
+    logger.warn(`[LIST] ${e.message} ${JSON.stringify(interaction)}`);
+    await logFail(JSON.stringify(interaction), e.message, RmrkEvent.LIST);
   }
   // exists
   // not burned
@@ -518,7 +540,12 @@ export async function handleRemark(extrinsic: SubstrateExtrinsic): Promise<void>
           await mintNFT_V1(remark)
           break;
         case RmrkEvent.SEND:
-          await send(remark)
+          if (specVersion == RmrkSpecVersion.V1) {
+            await send_V1(remark);
+          }
+          else if (specVersion == RmrkSpecVersion.V2) {
+            await send_V2(remark);
+          }
           break;
         case RmrkEvent.BUY:
           await buy(remark)

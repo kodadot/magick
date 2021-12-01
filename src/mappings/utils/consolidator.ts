@@ -16,7 +16,7 @@ export function isTransferable(nft: NFTEntity) {
   return !!nft.transferable
 }
 
-export function hasMeta(nft: RmrkInteraction): nft is RmrkInteraction  {
+export function hasMeta(nft: RmrkInteraction): nft is RmrkInteraction {
   return !!nft.metadata
 }
 
@@ -41,12 +41,19 @@ export function canOrElseError<T>(callback: (arg: T) => boolean, entity: T, nega
   }
 }
 
-export function validateInteraction(nft: NFTEntity, interaction: RmrkInteraction) {
+export function validateNFT(nft: NFTEntity) {
   try {
-    canOrElseError<RmrkInteraction>(hasMeta, interaction, true)
     canOrElseError<NFTEntity>(exists, nft, true)
     canOrElseError<NFTEntity>(isBurned, nft)
     canOrElseError<NFTEntity>(isTransferable, nft, true)
+  } catch (e) {
+    throw e
+  }
+}
+
+export function validateMeta(interaction: RmrkInteraction) {
+  try {
+    canOrElseError<RmrkInteraction>(hasMeta, interaction, true);
   } catch (e) {
     throw e
   }
@@ -59,7 +66,7 @@ export function isPositiveOrElseError(entity: BigInt | number, excludeZero?: boo
 }
 
 
-const isBalanceTransfer = ({section, method}: ExtraCall) => section === 'balances' && method === 'transfer'
+const isBalanceTransfer = ({ section, method }: ExtraCall) => section === 'balances' && method === 'transfer'
 const canBuy = (nft: NFTEntity) => (call: ExtraCall) => isBalanceTransfer(call) && isOwner(nft, call.args[0]) && BigInt(call.args[1]) >= BigInt(nft.price)
 
 export function isBuyLegalOrElseError(entity: NFTEntity, extraCalls: ExtraCall[]) {
