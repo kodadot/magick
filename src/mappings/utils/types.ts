@@ -15,12 +15,15 @@ export enum RmrkEvent {
   SEND = 'SEND',
   EMOTE = 'EMOTE',
 
-  //Event Alias in Standard 2.0.0, updated by bianyunjian
-  BURN = 'BURN',
+  BURN = 'BURN',  //Event Alias as CONSUME in Standard 2.0.0 
 
-  //Event for new features in Standard 2.0.0, updated by bianyunjian
+  CREATE = 'CREATE',  //Event Alias as MINT COLLECTION in Standard 2.0.0 
+
+
+  //Event for new features in Standard 2.0.0 
   ACCEPT = 'ACCEPT',
   RESADD = 'RESADD',
+ 
 
   //misc
   EQUIP = 'EQUIP',

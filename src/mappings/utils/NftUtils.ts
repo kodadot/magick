@@ -1,5 +1,5 @@
 import { trim } from './helper';
-import { RmrkEvent, RMRK, RmrkInteraction, RmrkAcceptInteraction, RmrkSendInteraction } from './types';
+import { RmrkEvent, RMRK, RmrkInteraction, RmrkAcceptInteraction, RmrkSendInteraction, RmrkSpecVersion } from './types';
 const SQUARE = '::'
 
 export function isHex(text: string) {
@@ -38,6 +38,23 @@ class NFTUtils {
 
   public static decodeAndConvert(rmrkString: string) {
     return NFTUtils.convert(NFTUtils.decodeRmrk(rmrkString))
+  }
+
+  public static getSpecVersion = (rmrkString: string): RmrkSpecVersion => {
+    try {
+      const split = NFTUtils.splitRmrkString(rmrkString);
+      if (split.length >= 3) {
+        let version = split[2];
+        if (version === RmrkSpecVersion.V1) {
+          return RmrkSpecVersion.V1;
+        } if (version === RmrkSpecVersion.V2) {
+          return RmrkSpecVersion.V2;
+        }
+      }
+      throw new TypeError(`RMRK: Unable to get SpecVersion: ${rmrkString}`)
+    } catch (e) {
+      throw e
+    }
   }
 
   public static getAction = (rmrkString: string): RmrkEvent => {
@@ -81,6 +98,11 @@ class NFTUtils {
     if (RmrkActionRegex.ACCEPT.test(rmrkString)) {
       return RmrkEvent.ACCEPT
     }
+
+    if (RmrkActionRegex.CREATE.test(rmrkString)) {
+      return RmrkEvent.CREATE
+    }
+
     throw new EvalError(`[NFTUtils] Unable to get action from ${rmrkString}`);
 
   }
@@ -109,6 +131,21 @@ class NFTUtils {
     } catch (e) {
       throw e
     }
+  }
+
+  public static unwrap_V2_MINT_RECIPIENT(rmrkString: string): string {
+    try {
+
+      const split = NFTUtils.splitRmrkString(rmrkString);
+
+      if (split.length >= 5) {
+        let recipient = split[4] || '';
+        return recipient;
+      }
+      return '';
+    } catch (e) {
+      throw e
+    } 
   }
 
   public static unwrap_SEND(rmrkString: string): any {
@@ -170,10 +207,12 @@ export class RmrkActionRegex {
   static LIST = /^[rR][mM][rR][kK]::LIST::/;
   static EMOTE = /^[rR][mM][rR][kK]::EMOTE::/;
 
-  
+
   static BURN = /^[rR][mM][rR][kK]::BURN::/;
   static RESADD = /^[rR][mM][rR][kK]::RESADD::/;
   static ACCEPT = /^[rR][mM][rR][kK]::ACCEPT::/;
+
+  static CREATE = /^[rR][mM][rR][kK]::CREATE::/;
 
 }
 

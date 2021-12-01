@@ -7,7 +7,7 @@ import { canOrElseError, exists, hasMeta, isBurned, isBuyLegalOrElseError, isOwn
 import { randomBytes } from 'crypto'
 import { emoteId, ensureInteraction } from './utils/helper';
 
-async function mint(remark: RemarkResult) {
+async function collection_V1(remark: RemarkResult) {
   let collection = null
   try {
     collection = NFTUtils.unwrap(remark.value) as Collection
@@ -33,18 +33,24 @@ async function mint(remark: RemarkResult) {
   }
 
 }
+async function collection_V2(remark: RemarkResult) {
+  collection_V1(remark);
+}
 
-async function mintNFT(remark: RemarkResult) {
+
+async function mintNFT_V1(remark: RemarkResult) {
   let nft = null
   try {
     nft = NFTUtils.unwrap(remark.value) as NFT
     canOrElseError<string>(exists, nft.collection, true)
+
     const collection = await CollectionEntity.get(nft.collection)
     canOrElseError<CollectionEntity>(exists, collection, true)
+
     isOwnerOrElseError(collection, remark.caller)
     const final = NFTEntity.create(nft)
 
-    final.id = getNftId(nft, remark.blockNumber)
+    final.id = getNftId(nft, remark.blockNumber);
     final.issuer = remark.caller
     final.currentOwner = remark.caller
     final.blockNumber = BigInt(remark.blockNumber)
@@ -60,10 +66,73 @@ async function mintNFT(remark: RemarkResult) {
     final.createdAt = remark.timestamp
     final.updatedAt = remark.timestamp
 
-    logger.info(`SAVED [MINT] ${final.id}`)
+    logger.info(`SAVED [MINT_NFT V1 SIMPLE] ${final.id}`)
     await final.save()
   } catch (e) {
-    logger.error(`[MINT] ${e.message} ${JSON.stringify(nft)}`)
+    logger.error(`[MINT_NFT V1] ${e.message} ${JSON.stringify(nft)} ${JSON.stringify(remark)}`)
+    await logFail(JSON.stringify(nft), e.message, RmrkEvent.MINTNFT)
+  }
+}
+
+async function mintNFT_V2(remark: RemarkResult) {
+  let nft = null
+  try {
+    nft = NFTUtils.unwrap(remark.value) as NFT;
+    let recipient = NFTUtils.unwrap_V2_MINT_RECIPIENT(remark.value);
+    canOrElseError<string>(exists, nft.collection, true);
+
+    const collection = await CollectionEntity.get(nft.collection);
+    canOrElseError<CollectionEntity>(exists, collection, true);
+    isOwnerOrElseError(collection, remark.caller);
+
+
+    const newNFT = NFTEntity.create(nft);
+    newNFT.id = getNftId(nft, remark.blockNumber);
+    newNFT.issuer = remark.caller;
+    newNFT.currentOwner = remark.caller;
+    newNFT.blockNumber = BigInt(remark.blockNumber);
+    newNFT.name = nft.name;
+    newNFT.instance = nft.instance;
+    newNFT.transferable = nft.transferable;
+    newNFT.collectionId = nft.collection;
+    newNFT.sn = nft.sn;
+    newNFT.metadata = nft.metadata;
+    newNFT.price = BigInt(0);
+    newNFT.burned = false;
+    newNFT.events = [eventFrom(RmrkEvent.MINTNFT, remark, '')];
+    newNFT.createdAt = remark.timestamp;
+    newNFT.updatedAt = remark.timestamp;
+
+    if (!recipient) {
+      logger.info(`SAVED [MINT_NFT V2 SIMPLE] ${newNFT.id}`);
+      await newNFT.save();
+
+    }
+
+    else {
+      const parentNFT = await NFTEntity.get(recipient);
+      if (!parentNFT) {
+        newNFT.currentOwner = recipient; // mint nft to the specified account directly        
+        logger.info(`SAVED [MINT_NFT V2 TO ACCOUNT] ${newNFT.id}`);
+        await newNFT.save();
+      }
+      else {
+        // mint nft to the specified nft as child 
+        if (!parentNFT.children) {
+          parentNFT.children = [];
+        }
+        let newNFTChild: NFTChild = { id: newNFT.id, equipped: '', pending: false };
+        parentNFT.children.push(newNFTChild);
+        await parentNFT.save();
+
+        newNFT.currentOwner = recipient;        
+        logger.info(`SAVED [MINT_NFT V2 TO NFT] ${newNFT.id}`);
+        await newNFT.save();
+      }
+    }
+
+  } catch (e) {
+    logger.error(`[MINT_NFT V2] ${e.message} ${JSON.stringify(nft)} ${JSON.stringify(remark)}`)
     await logFail(JSON.stringify(nft), e.message, RmrkEvent.MINTNFT)
   }
 }
@@ -430,13 +499,24 @@ export async function handleRemark(extrinsic: SubstrateExtrinsic): Promise<void>
     try {
       const decoded = hexToString(remark.value)
       const event: RmrkEvent = NFTUtils.getAction(decoded)
+      const specVersion: RmrkSpecVersion = NFTUtils.getSpecVersion(decoded)
 
       switch (event) {
+        case RmrkEvent.CREATE:
+          if (specVersion == RmrkSpecVersion.V2) {
+            await collection_V2(remark);
+          }
+          break;
         case RmrkEvent.MINT:
-          await mint(remark)
+          if (specVersion == RmrkSpecVersion.V1) {
+            await collection_V1(remark);
+          }
+          else {
+            await mintNFT_V2(remark);
+          }
           break;
         case RmrkEvent.MINTNFT:
-          await mintNFT(remark)
+          await mintNFT_V1(remark)
           break;
         case RmrkEvent.SEND:
           await send(remark)
