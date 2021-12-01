@@ -89,4 +89,9 @@ enum Interaction {
   BUY
   CONSUME
   EMOTE
+
+  BURN
+  SEND
+  RESADD
+  ACCEPT
 }

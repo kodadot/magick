@@ -72,6 +72,9 @@ class NFTUtils {
     if (RmrkActionRegex.EMOTE.test(rmrkString)) {
       return RmrkEvent.EMOTE
     }
+    if (RmrkActionRegex.BURN.test(rmrkString)) {
+      return RmrkEvent.BURN
+    }
     if (RmrkActionRegex.RESADD.test(rmrkString)) {
       return RmrkEvent.RESADD
     }
@@ -167,6 +170,8 @@ export class RmrkActionRegex {
   static LIST = /^[rR][mM][rR][kK]::LIST::/;
   static EMOTE = /^[rR][mM][rR][kK]::EMOTE::/;
 
+  
+  static BURN = /^[rR][mM][rR][kK]::BURN::/;
   static RESADD = /^[rR][mM][rR][kK]::RESADD::/;
   static ACCEPT = /^[rR][mM][rR][kK]::ACCEPT::/;
 

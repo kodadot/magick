@@ -1,4 +1,4 @@
-import { CollectionEntity, Emote, FailedEntity, NFTEntity, RemarkEntity, Resource } from "../types";
+import { CollectionEntity, Emote, FailedEntity, NFTChild, NFTEntity, RemarkEntity, Resource } from "../types";
 import { SubstrateExtrinsic } from "@subql/types";
 import { getRemarksFrom, RemarkResult } from './utils';
 import { Collection, eventFrom, getNftId, NFT, RmrkAcceptInteraction, RmrkAcceptType, RmrkEvent, RmrkInteraction, RmrkSendInteraction, RmrkSpecVersion } from './utils/types';
@@ -69,30 +69,81 @@ async function mintNFT(remark: RemarkResult) {
 }
 
 async function send(remark: RemarkResult) {
-  let interaction = null
-
+  let interaction: RmrkSendInteraction = null
 
   try {
     interaction = (NFTUtils.unwrap_SEND(remark.value) as RmrkSendInteraction)
+    const currentNFT = await NFTEntity.get(interaction.id);
+    validateInteraction(currentNFT, interaction)
+    isOwnerOrElseError(currentNFT, remark.caller)
+    // isAccountValidOrElseError(interaction.metadata)
 
     if (interaction.version === RmrkSpecVersion.V1) {
-      // 1.0.0  auto ACCEPT
-      const nft = await NFTEntity.get(interaction.id)
-      validateInteraction(nft, interaction)
-      isOwnerOrElseError(nft, remark.caller)
-      // isAccountValidOrElseError(interaction.metadata)
-
-      nft.currentOwner = interaction.metadata
-      nft.price = BigInt(0)
-      nft.events.push(eventFrom(RmrkEvent.SEND, remark, interaction.metadata))
-      nft.updatedAt = remark.timestamp
-      await nft.save()
+      //Standard 1.0.0: auto ACCEPT     
+      currentNFT.currentOwner = interaction.recipient
+      currentNFT.price = BigInt(0)
+      currentNFT.events.push(eventFrom(RmrkEvent.SEND, remark, interaction.recipient))
+      currentNFT.updatedAt = remark.timestamp
+      await currentNFT.save()
     }
     else if (interaction.version === RmrkSpecVersion.V2) {
-      //TODO 2.0.0
-      // same owner  =>auto ACCEPT
-      // add children and pending=true
+      // Standard 2.0.0: 
+      const targetNFT = await NFTEntity.get(interaction.recipient);
 
+      if (!targetNFT) {
+        //sending nft to account
+        //same logic handle as RmrkSpecVersion.V1
+        currentNFT.currentOwner = interaction.recipient
+        currentNFT.price = BigInt(0)
+        currentNFT.events.push(eventFrom(RmrkEvent.SEND, remark, interaction.recipient))
+        currentNFT.updatedAt = remark.timestamp
+        await currentNFT.save()
+
+      }
+      else {
+        // check if same owner for the source NFT and targetNFT
+        let sameOwner = isOwner(targetNFT, remark.caller);
+        let pending: boolean = true;
+        if (sameOwner) {
+          // same owner => auto ACCEPT
+          pending = false;
+        }
+
+        if (!targetNFT.children) {
+          targetNFT.children = [];
+        }
+        let nftChild: NFTChild = {
+          id: currentNFT.id,
+          pending: pending,
+          equipped: ''
+        };
+        targetNFT.children.push(nftChild);
+        await targetNFT.save();
+
+        let currentOwner = currentNFT.currentOwner;
+        //remove currentNFT from its parent if it has parent.
+        if (currentOwner) {
+          const parent = await NFTEntity.get(currentNFT.currentOwner);
+          if (!parent) {
+            //the parent should be a account, no need to handle children properties
+          }
+          else {
+            if (parent.children) {
+              let findIndex = parent.children.findIndex((value, index, array) => {
+                return value.id === currentNFT.id
+              });
+              if (findIndex >= 0) {
+                parent.children.splice(findIndex, 1);
+                await parent.save();
+              }
+            }
+          }
+          //update currentNFT.currentOwner =>  targetNFT.id             
+          currentNFT.currentOwner = targetNFT.id;
+          await currentNFT.save();
+
+        }
+      }
     }
 
   } catch (e) {
@@ -129,7 +180,9 @@ async function buy(remark: RemarkResult) {
   // enough money ?
 }
 
-async function consumeOrBurn(remark: RemarkResult, eventAlias: RmrkEvent) {
+//Standard 1.0.0 CONSUME
+//Standard 2.0.0 BURN as alias
+async function consume(remark: RemarkResult, eventAlias: RmrkEvent) {
   let interaction = null
 
   try {
@@ -392,10 +445,9 @@ export async function handleRemark(extrinsic: SubstrateExtrinsic): Promise<void>
           await buy(remark)
           break;
         case RmrkEvent.CONSUME:
-          await consumeOrBurn(remark, RmrkEvent.CONSUME);
-          break;
         case RmrkEvent.BURN:
-          await consumeOrBurn(remark, RmrkEvent.BURN);
+          await consume(remark, event);
+
           break;
         case RmrkEvent.LIST:
           await list(remark)
