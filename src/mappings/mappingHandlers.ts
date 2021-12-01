@@ -47,27 +47,27 @@ async function mintNFT_V1(remark: RemarkResult) {
     const collection = await CollectionEntity.get(nft.collection)
     canOrElseError<CollectionEntity>(exists, collection, true)
 
-    isOwnerOrElseError(collection, remark.caller)
-    const final = NFTEntity.create(nft)
+    isOwnerOrElseError(collection, remark.caller);
 
-    final.id = getNftId(nft, remark.blockNumber);
-    final.issuer = remark.caller
-    final.currentOwner = remark.caller
-    final.blockNumber = BigInt(remark.blockNumber)
-    final.name = nft.name
-    final.instance = nft.instance
-    final.transferable = nft.transferable
-    final.collectionId = nft.collection
-    final.sn = nft.sn
-    final.metadata = nft.metadata
-    final.price = BigInt(0)
-    final.burned = false
-    final.events = [eventFrom(RmrkEvent.MINTNFT, remark, '')]
-    final.createdAt = remark.timestamp
-    final.updatedAt = remark.timestamp
+    nft.id = getNftId(nft, remark.blockNumber);
+    const newNFT = NFTEntity.create(nft);
+    newNFT.issuer = remark.caller;
+    newNFT.currentOwner = remark.caller;
+    newNFT.blockNumber = BigInt(remark.blockNumber);
+    newNFT.name = nft.name;
+    newNFT.instance = nft.instance;
+    newNFT.transferable = nft.transferable;
+    newNFT.collectionId = nft.collection;
+    newNFT.sn = nft.sn;
+    newNFT.metadata = nft.metadata;
+    newNFT.price = BigInt(0);
+    newNFT.burned = false;
+    newNFT.events = [eventFrom(RmrkEvent.MINTNFT, remark, '')]
+    newNFT.createdAt = remark.timestamp
+    newNFT.updatedAt = remark.timestamp
 
-    logger.info(`SAVED [MINT_NFT V1 SIMPLE] ${final.id}`)
-    await final.save()
+    logger.info(`SAVED [MINT_NFT V1 SIMPLE] ${newNFT.id}`)
+    await newNFT.save()
   } catch (e) {
     logger.error(`[MINT_NFT V1] ${e.message} ${JSON.stringify(nft)} ${JSON.stringify(remark)}`)
     await logFail(JSON.stringify(nft), e.message, RmrkEvent.MINTNFT)
@@ -85,9 +85,8 @@ async function mintNFT_V2(remark: RemarkResult) {
     canOrElseError<CollectionEntity>(exists, collection, true);
     isOwnerOrElseError(collection, remark.caller);
 
-
+    nft.id = getNftId(nft, remark.blockNumber);
     const newNFT = NFTEntity.create(nft);
-    newNFT.id = getNftId(nft, remark.blockNumber);
     newNFT.issuer = remark.caller;
     newNFT.currentOwner = remark.caller;
     newNFT.blockNumber = BigInt(remark.blockNumber);
@@ -125,7 +124,7 @@ async function mintNFT_V2(remark: RemarkResult) {
         parentNFT.children.push(newNFTChild);
         await parentNFT.save();
 
-        newNFT.currentOwner = recipient;        
+        newNFT.currentOwner = recipient;
         logger.info(`SAVED [MINT_NFT V2 TO NFT] ${newNFT.id}`);
         await newNFT.save();
       }

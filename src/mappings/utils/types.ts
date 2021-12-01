@@ -52,6 +52,7 @@ export interface RmrkInteraction {
   metadata?: string;
 }
 export enum RmrkSpecVersion {
+  V01 = "0.1",
   V1 = "1.0.0",
   V2 = "2.0.0"
 }

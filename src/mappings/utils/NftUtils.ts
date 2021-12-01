@@ -45,13 +45,12 @@ class NFTUtils {
       const split = NFTUtils.splitRmrkString(rmrkString);
       if (split.length >= 3) {
         let version = split[2];
-        if (version === RmrkSpecVersion.V1) {
-          return RmrkSpecVersion.V1;
-        } if (version === RmrkSpecVersion.V2) {
+
+        if (version === RmrkSpecVersion.V2) {
           return RmrkSpecVersion.V2;
         }
       }
-      throw new TypeError(`RMRK: Unable to get SpecVersion: ${rmrkString}`)
+      return RmrkSpecVersion.V1; // regard Empty,V0.1 ,V1.0.0 both as V1.0.0
     } catch (e) {
       throw e
     }
@@ -145,7 +144,7 @@ class NFTUtils {
       return '';
     } catch (e) {
       throw e
-    } 
+    }
   }
 
   public static unwrap_SEND(rmrkString: string): any {
