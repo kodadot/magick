@@ -75,12 +75,16 @@ export function isBuyLegalOrElseError(entity: NFTEntity, extraCalls: ExtraCall[]
     throw new ReferenceError(`[CONSOLIDATE ILLEGAL BUY] Entity: ${entity.id} CALLS: ${JSON.stringify(extraCalls)}`)
   }
 }
+export function unwrapBuyPrice(entity: NFTEntity, extraCalls: ExtraCall[]) {
 
-// TODO: Does not work :)
-// export function isAccountValidOrElseError(caller: string) {
-//   try {
-//     decodeAddress(caller)
-//   } catch (e) {
-//     throw new ReferenceError(`[CONSOLIDATE Invalid account] ${caller}`)
-//   }
-// }
+  try {
+    if (extraCalls && extraCalls.length > 0) {
+      let price = BigInt(extraCalls[0].args[1]);
+      return price;
+    }
+    return 0;
+  } catch (error) {
+    throw new ReferenceError(`[CONSOLIDATE ILLEGAL PRICE FOR BUY InTERACTION] Entity: ${entity.id} CALLS: ${JSON.stringify(extraCalls)}`);
+  }
+}
+

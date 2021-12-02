@@ -3,7 +3,7 @@ import { SubstrateExtrinsic } from "@subql/types";
 import { getRemarksFrom, RemarkResult } from './utils';
 import { Collection, eventFrom, getNftId, getNftId_V01, NFT, RmrkAcceptInteraction, RmrkAcceptType, RmrkEvent, RmrkInteraction, RmrkSendInteraction, RmrkSpecVersion } from './utils/types';
 import NFTUtils, { hexToString } from './utils/NftUtils';
-import { canOrElseError, exists, hasMeta, isBurned, isBuyLegalOrElseError, isOwner, isOwnerOrElseError, isPositiveOrElseError, isTransferable, validateNFT, validateMeta } from './utils/consolidator'
+import { canOrElseError, exists, hasMeta, isBurned, isBuyLegalOrElseError, isOwner, isOwnerOrElseError, isPositiveOrElseError, isTransferable, validateNFT, validateMeta, unwrapBuyPrice } from './utils/consolidator'
 import { randomBytes } from 'crypto'
 import { emoteId, ensureInteraction } from './utils/helper';
 
@@ -24,7 +24,8 @@ async function collection_V1(remark: RemarkResult) {
     final.blockNumber = BigInt(remark.blockNumber)
     final.metadata = collection.metadata
     final.events = [eventFrom(RmrkEvent.MINT, remark, '')]
-
+    final.createdAt = remark.timestamp;
+    final.updatedAt = remark.timestamp;
     logger.info(`SAVED [COLLECTION] ${final.id}`)
     await final.save()
   } catch (e) {
@@ -159,7 +160,7 @@ async function send_V1(remark: RemarkResult) {
     if (specVersion === RmrkSpecVersion.V1 || specVersion === RmrkSpecVersion.V01) {
       //Standard 1.0.0: auto ACCEPT     
       currentNFT.currentOwner = interaction.recipient
-      currentNFT.price = BigInt(0)
+      // currentNFT.price = BigInt(0);
       currentNFT.events.push(eventFrom(RmrkEvent.SEND, remark, interaction.recipient))
       currentNFT.updatedAt = remark.timestamp
       await currentNFT.save()
@@ -190,7 +191,7 @@ async function send_V2(remark: RemarkResult) {
         //sending nft to account
         //same logic handle as RmrkSpecVersion.V1
         currentNFT.currentOwner = interaction.recipient;
-        currentNFT.price = BigInt(0);
+        // currentNFT.price = BigInt(0);
         currentNFT.events.push(eventFrom(RmrkEvent.SEND, remark, interaction.recipient));
         currentNFT.updatedAt = remark.timestamp;
         await currentNFT.save();
@@ -264,8 +265,8 @@ async function buy(remark: RemarkResult) {
     isPositiveOrElseError(nft.price, true)
     isBuyLegalOrElseError(nft, remark.extra || [])
     nft.currentOwner = remark.caller
-    nft.price = BigInt(0)
-    nft.events.push(eventFrom(RmrkEvent.BUY, remark, remark.caller))
+    nft.price = BigInt(unwrapBuyPrice(nft, remark.extra || []));  // Utility.batch_all => price for BUY
+    nft.events.push(eventFrom(RmrkEvent.BUY, remark, nft.price.toString()))
     nft.updatedAt = remark.timestamp
     await nft.save();
 
@@ -283,28 +284,28 @@ async function buy(remark: RemarkResult) {
 //Standard 1.0.0 CONSUME
 //Standard 2.0.0 BURN as alias
 async function consume(remark: RemarkResult, eventAlias: RmrkEvent) {
-  let interaction = null
+  let interaction = null;
 
   try {
-    interaction = ensureInteraction(NFTUtils.unwrap(remark.value) as RmrkInteraction)
-    const nft = await NFTEntity.get(interaction.id)
-    canOrElseError<NFTEntity>(exists, nft, true)
-    canOrElseError<NFTEntity>(isBurned, nft)
-    isOwnerOrElseError(nft, remark.caller)
-    nft.price = BigInt(0)
+    interaction = ensureInteraction(NFTUtils.unwrap(remark.value) as RmrkInteraction);
+    const nft = await NFTEntity.get(interaction.id);
+    canOrElseError<NFTEntity>(exists, nft, true);
+    canOrElseError<NFTEntity>(isBurned, nft);
+    isOwnerOrElseError(nft, remark.caller);
+    nft.price = BigInt(0);
     nft.burned = true;
-    nft.events.push(eventFrom(eventAlias, remark, ''))
-    nft.updatedAt = remark.timestamp
+    nft.events.push(eventFrom(eventAlias, remark, ''));
+    nft.updatedAt = remark.timestamp;
     await nft.save();
 
   } catch (e) {
-    logger.warn(`[${eventAlias}] ${e.message} ${JSON.stringify(interaction)}`)
-    await logFail(JSON.stringify(interaction), e.message, eventAlias)
+    logger.warn(`[${eventAlias}] ${e.message} ${JSON.stringify(interaction)}`);
+    await logFail(JSON.stringify(interaction), e.message, eventAlias);
   }
 }
 
 async function list(remark: RemarkResult) {
-  let interaction = null
+  let interaction = null;
 
   try {
     interaction = ensureInteraction(NFTUtils.unwrap(remark.value) as RmrkInteraction);
@@ -423,7 +424,6 @@ export async function handleCall(extrinsic: SubstrateExtrinsic): Promise<void> {
     } catch (e) {
       logger.warn(`[ERR] Can't save RMRK at block ${record.blockNumber} because \n${e}`)
     }
-
   }
 }
 

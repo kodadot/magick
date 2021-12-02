@@ -9,24 +9,24 @@ network:
 definitions:
   mapping: &mymapping
     handlers:
-      - handler: handleCall
-        kind: substrate/CallHandler
-        filter:
-          module: utility
-          method: batchAll
-          success: true
-      - handler: handleCall
-        kind: substrate/CallHandler
-        filter:
-          module: utility
-          method: batch
-          success: true
-      - handler: handleCall
-        kind: substrate/CallHandler
-        filter:
-          module: system
-          method: remark
-          success: true
+      # - handler: handleCall
+      #   kind: substrate/CallHandler
+      #   filter:
+      #     module: utility
+      #     method: batchAll
+      #     success: true
+      # - handler: handleCall
+      #   kind: substrate/CallHandler
+      #   filter:
+      #     module: utility
+      #     method: batch
+      #     success: true
+      # - handler: handleCall
+      #   kind: substrate/CallHandler
+      #   filter:
+      #     module: system
+      #     method: remark
+      #     success: true
       - handler: handleRemark
         kind: substrate/CallHandler
         filter:
@@ -50,7 +50,7 @@ dataSources:
     kind: substrate/Runtime
     filter:
       specName: kusama
-    startBlock: 4892957
+    startBlock: 4892957  #6802210 #4892957
     mapping: *mymapping # can reuse or change
   - name: westendRuntime
     kind: substrate/Runtime
