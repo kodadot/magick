@@ -25,7 +25,7 @@ async function saveEventEntities(events?: Event[]): Promise<string> {
       entity.interactionCollection = event.interactionCollection || '';
       entity.interactionNFT = event.interactionNFT || '';
       entity.interactionAccount = event.interactionAccount || '';
-      entity.nftPrice = event.nftPrice || BigInt(0);
+      entity.nftPrice = BigInt(event.nftPrice || 0);
       await entity.save();
       if (eventId) {
         eventId += ",";

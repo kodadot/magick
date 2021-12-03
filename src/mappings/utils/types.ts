@@ -45,7 +45,8 @@ export function eventFrom(interaction: RmrkEvent,
   interactionCollection: string,
   interactionNFT: string,
   interactionAccount: string,
-  nftPrice: bigint): Event {
+  nftPrice: BigInt): Event {
+  let nftPriceString = nftPrice.toString();
   return {
     interaction,
     blockNumber,
@@ -55,7 +56,7 @@ export function eventFrom(interaction: RmrkEvent,
     interactionCollection,
     interactionNFT,
     interactionAccount,
-    nftPrice
+    nftPrice: nftPriceString
   }
 }
 

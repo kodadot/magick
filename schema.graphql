@@ -84,7 +84,7 @@ type Event @jsonField {
   interactionCollection: String
   interactionNFT: String
   interactionAccount: String
-  nftPrice: BigInt
+  nftPrice: String
 }
 
 type EventEntity @entity {
