@@ -27,6 +27,8 @@ type CollectionEntity @entity {
   blockNumber: BigInt @index
   createdAt: Date!
   updatedAt: Date! @index
+
+  eventId: String
 }
 
 type NFTEntity @entity {
@@ -50,6 +52,8 @@ type NFTEntity @entity {
   priority: [String]
   resources: [Resource]
   children: [NFTChild]
+
+  eventId: String
 }
 type Resource @jsonField {
   pending: Boolean!
@@ -70,6 +74,15 @@ type NFTChild @jsonField {
 }
 
 type Event @jsonField {
+  blockNumber: String
+  timestamp: Date
+  caller: String!
+  interaction: String
+  meta: String!
+}
+
+type EventEntity @entity {
+  id: ID!
   blockNumber: String
   timestamp: Date
   caller: String!

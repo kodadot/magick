@@ -33,21 +33,21 @@ import { getRemarksFrom } from './utils/extract'
 //     await record.save();
 // }
 
-export async function handleRemark(extrinsic: SubstrateExtrinsic): Promise<void> {
-    const records = getRemarksFrom(extrinsic)
-    .map((r, i) => ({...r, id: `${r.blockNumber}-${i}` }))
-    .map(RemarkEntity.create);
+// export async function handleRemark(extrinsic: SubstrateExtrinsic): Promise<void> {
+//     const records = getRemarksFrom(extrinsic)
+//     .map((r, i) => ({...r, id: `${r.blockNumber}-${i}` }))
+//     .map(RemarkEntity.create);
 
-    for (const record of records) {
-        try {
-            await record.save()
-            logger.info(`[Saved RMRK] ${record.id}`)
-        } catch (e) {
-            logger.warn(`[ERR] Can't save RMRK at block ${record.blockNumber} because \n${e}`)
-        }
+//     for (const record of records) {
+//         try {
+//             await record.save()
+//             logger.info(`[Saved RMRK] ${record.id}`)
+//         } catch (e) {
+//             logger.warn(`[ERR] Can't save RMRK at block ${record.blockNumber} because \n${e}`)
+//         }
         
     
-    }
-}
+//     }
+// }
 
 

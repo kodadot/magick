@@ -1,4 +1,4 @@
-import { CollectionEntity, Emote, FailedEntity, NFTChild, NFTEntity, RemarkEntity, Resource } from "../types";
+import { CollectionEntity, Emote, EventEntity, FailedEntity, NFTChild, NFTEntity, RemarkEntity, Resource } from "../types";
 import { SubstrateExtrinsic } from "@subql/types";
 import { getRemarksFrom, RemarkResult } from './utils';
 import { Collection, eventFrom, getNftId, getNftId_V01, NFT, RmrkAcceptInteraction, RmrkAcceptType, RmrkEvent, RmrkInteraction, RmrkSendInteraction, RmrkSpecVersion } from './utils/types';
@@ -6,6 +6,31 @@ import NFTUtils, { hexToString } from './utils/NftUtils';
 import { canOrElseError, exists, hasMeta, isBurned, isBuyLegalOrElseError, isOwner, isOwnerOrElseError, isPositiveOrElseError, isTransferable, validateNFT, validateMeta, unwrapBuyPrice } from './utils/consolidator'
 import { randomBytes } from 'crypto'
 import { emoteId, ensureInteraction } from './utils/helper';
+import {
+  Event,
+} from './../types/interfaces'
+
+async function saveEventEntities(events?: Event[]): Promise<string> {
+  let eventId = '';
+  if (events) {
+    for (let index = 0; index < events.length; index++) {
+      const event = events[index];
+      let id = '0';
+      let entity = new EventEntity(id);
+      entity.blockNumber = event.blockNumber;
+      entity.timestamp = event.timestamp;
+      entity.caller = event.caller;
+      entity.interaction = event.interaction;
+      entity.meta = event.meta;
+      await entity.save();
+      if (eventId) {
+        eventId += ",";
+      }
+      eventId += entity.id;
+    }
+  }
+  return eventId;
+}
 
 async function collection_V1(remark: RemarkResult) {
   let collection = null
@@ -23,9 +48,12 @@ async function collection_V1(remark: RemarkResult) {
     final.symbol = collection.symbol.trim()
     final.blockNumber = BigInt(remark.blockNumber)
     final.metadata = collection.metadata
-    final.events = [eventFrom(RmrkEvent.MINT, remark, '')]
+    final.events = [eventFrom(RmrkEvent.MINT, remark, '')];
     final.createdAt = remark.timestamp;
     final.updatedAt = remark.timestamp;
+
+    final.eventId = await saveEventEntities(final.events);
+
     logger.info(`SAVED [COLLECTION] ${final.id}`)
     await final.save()
   } catch (e) {
@@ -74,6 +102,8 @@ async function mintNFT_V1(remark: RemarkResult) {
     newNFT.createdAt = remark.timestamp;
     newNFT.updatedAt = remark.timestamp;
 
+    newNFT.eventId = await saveEventEntities(newNFT.events);
+
     logger.info(`SAVED [MINT_NFT ${specVersion} SIMPLE] ${newNFT.id}`)
     await newNFT.save()
   } catch (e) {
@@ -110,7 +140,10 @@ async function mintNFT_V2(remark: RemarkResult) {
     newNFT.createdAt = remark.timestamp;
     newNFT.updatedAt = remark.timestamp;
 
+    newNFT.eventId = await saveEventEntities(newNFT.events);
+
     if (!recipient) {
+
       logger.info(`SAVED [MINT_NFT V2 SIMPLE] ${newNFT.id}`);
       await newNFT.save();
 
@@ -163,6 +196,9 @@ async function send_V1(remark: RemarkResult) {
       // currentNFT.price = BigInt(0);
       currentNFT.events.push(eventFrom(RmrkEvent.SEND, remark, interaction.recipient))
       currentNFT.updatedAt = remark.timestamp
+
+      currentNFT.eventId = await saveEventEntities(currentNFT.events);
+
       await currentNFT.save()
     }
 
@@ -194,6 +230,9 @@ async function send_V2(remark: RemarkResult) {
         // currentNFT.price = BigInt(0);
         currentNFT.events.push(eventFrom(RmrkEvent.SEND, remark, interaction.recipient));
         currentNFT.updatedAt = remark.timestamp;
+
+        currentNFT.eventId = await saveEventEntities(currentNFT.events);
+
         await currentNFT.save();
 
       }
@@ -241,6 +280,9 @@ async function send_V2(remark: RemarkResult) {
           currentNFT.currentOwner = targetNFT.id;
           currentNFT.events.push(eventFrom(RmrkEvent.SEND, remark, interaction.recipient));
           currentNFT.updatedAt = remark.timestamp;
+
+          currentNFT.eventId = await saveEventEntities(currentNFT.events);
+
           await currentNFT.save();
 
         }
@@ -268,6 +310,10 @@ async function buy(remark: RemarkResult) {
     nft.price = BigInt(unwrapBuyPrice(nft, remark.extra || []));  // Utility.batch_all => price for BUY
     nft.events.push(eventFrom(RmrkEvent.BUY, remark, nft.price.toString()))
     nft.updatedAt = remark.timestamp
+
+    nft.eventId = await saveEventEntities(nft.events);
+
+
     await nft.save();
 
   } catch (e) {
@@ -294,8 +340,12 @@ async function consume(remark: RemarkResult, eventAlias: RmrkEvent) {
     isOwnerOrElseError(nft, remark.caller);
     nft.price = BigInt(0);
     nft.burned = true;
-    nft.events.push(eventFrom(eventAlias, remark, ''));
+    nft.events.push(eventFrom(eventAlias, remark, interaction.metadata));
     nft.updatedAt = remark.timestamp;
+
+    nft.eventId = await saveEventEntities(nft.events);
+
+
     await nft.save();
 
   } catch (e) {
@@ -318,6 +368,9 @@ async function list(remark: RemarkResult) {
     nft.price = price;
     nft.events.push(eventFrom(RmrkEvent.LIST, remark, interaction.metadata));
     nft.updatedAt = remark.timestamp;
+
+    nft.eventId = await saveEventEntities(nft.events);
+
     await nft.save();
 
   } catch (e) {
@@ -343,6 +396,9 @@ async function changeIssuer(remark: RemarkResult) {
     isOwnerOrElseError(collection, remark.caller)
     collection.currentOwner = interaction.metadata
     collection.events.push(eventFrom(RmrkEvent.CHANGEISSUER, remark, interaction.metadata))
+
+    collection.eventId = await saveEventEntities(collection.events);
+
     await collection.save();
   } catch (e) {
     logger.warn(`[CHANGEISSUER] ${e.message} ${JSON.stringify(interaction)}`)
@@ -460,8 +516,10 @@ async function accept(remark: RemarkResult) {
       }
     }
 
-    nft.events.push(eventFrom(RmrkEvent.ACCEPT, remark, ''));
+    nft.events.push(eventFrom(RmrkEvent.ACCEPT, remark, interaction.id2));
     nft.updatedAt = remark.timestamp;
+
+    nft.eventId = await saveEventEntities(nft.events);
 
     await nft.save();
 
@@ -512,8 +570,10 @@ async function resAdd(remark: RemarkResult) {
     }
 
     nft.resources.push(newResource);
-    nft.events.push(eventFrom(RmrkEvent.RESADD, remark, ''));
+    nft.events.push(eventFrom(RmrkEvent.RESADD, remark, interaction.metadata));
     nft.updatedAt = remark.timestamp;
+
+    nft.eventId = await saveEventEntities(nft.events);
 
     await nft.save();
 
@@ -525,8 +585,21 @@ async function resAdd(remark: RemarkResult) {
 }
 
 export async function handleRemark(extrinsic: SubstrateExtrinsic): Promise<void> {
-  const records = getRemarksFrom(extrinsic)
+  const records = getRemarksFrom(extrinsic);
 
+  //save remark entity
+  let remarkEntities = records.map((r, i) => ({ ...r, id: `${r.blockNumber}-${i}` }))
+    .map(RemarkEntity.create);
+  for (const remarkEntity of remarkEntities) {
+    try {
+      await remarkEntity.save()
+      logger.info(`[Saved RMRK] ${remarkEntity.id}`)
+    } catch (e) {
+      logger.warn(`[ERR] Can't save RMRK at block ${remarkEntity.blockNumber} because \n${e}`)
+    }
+  }
+
+  //handle interaction
   for (const remark of records) {
     try {
       const decoded = hexToString(remark.value)
