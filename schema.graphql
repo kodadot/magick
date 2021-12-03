@@ -11,6 +11,7 @@ type FailedEntity @entity {
   value: String!
   reason: String!
   interaction: String
+  remark: String
 }
 
 type CollectionEntity @entity {

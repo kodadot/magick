@@ -15,7 +15,7 @@ async function saveEventEntities(events?: Event[]): Promise<string> {
   if (events) {
     for (let index = 0; index < events.length; index++) {
       const event = events[index];
-      let id = '0';
+      let id = (event.blockNumber) + '-' + index;
       let entity = new EventEntity(id);
       entity.blockNumber = event.blockNumber;
       entity.timestamp = event.timestamp;
@@ -58,7 +58,7 @@ async function collection_V1(remark: RemarkResult) {
     await final.save()
   } catch (e) {
     logger.error(`[COLLECTION] ${e.message}, ${JSON.stringify(collection)}`)
-    await logFail(JSON.stringify(collection), e.message, RmrkEvent.MINT)
+    await logFail(JSON.stringify(collection), e.message, RmrkEvent.MINT, remark)
   }
 
 }
@@ -108,7 +108,7 @@ async function mintNFT_V1(remark: RemarkResult) {
     await newNFT.save()
   } catch (e) {
     logger.error(`[MINT_NFT ${specVersion} ] ${e.message} ${JSON.stringify(nft)} ${JSON.stringify(remark)}`)
-    await logFail(JSON.stringify(nft), e.message, RmrkEvent.MINTNFT)
+    await logFail(JSON.stringify(nft), e.message, RmrkEvent.MINTNFT, remark)
   }
 }
 
@@ -175,7 +175,7 @@ async function mintNFT_V2(remark: RemarkResult) {
 
   } catch (e) {
     logger.error(`[MINT_NFT V2] ${e.message} ${JSON.stringify(nft)} ${JSON.stringify(remark)}`)
-    await logFail(JSON.stringify(nft), e.message, RmrkEvent.MINTNFT)
+    await logFail(JSON.stringify(nft), e.message, RmrkEvent.MINTNFT, remark)
   }
 }
 
@@ -205,7 +205,7 @@ async function send_V1(remark: RemarkResult) {
 
   } catch (e) {
     logger.warn(`[SEND V1] ${e.message} ${JSON.stringify(interaction)}`)
-    await logFail(JSON.stringify(interaction), e.message, RmrkEvent.SEND)
+    await logFail(JSON.stringify(interaction), e.message, RmrkEvent.SEND, remark)
   }
 }
 async function send_V2(remark: RemarkResult) {
@@ -291,7 +291,7 @@ async function send_V2(remark: RemarkResult) {
 
   } catch (e) {
     logger.warn(`[SEND V2] ${e.message} ${JSON.stringify(interaction)}`)
-    await logFail(JSON.stringify(interaction), e.message, RmrkEvent.SEND)
+    await logFail(JSON.stringify(interaction), e.message, RmrkEvent.SEND, remark)
   }
 }
 
@@ -318,7 +318,7 @@ async function buy(remark: RemarkResult) {
 
   } catch (e) {
     logger.warn(`[BUY] ${e.message} ${JSON.stringify(interaction)}`)
-    await logFail(JSON.stringify(interaction), e.message, RmrkEvent.BUY)
+    await logFail(JSON.stringify(interaction), e.message, RmrkEvent.BUY, remark)
   }
   // exists
   // not burned
@@ -350,7 +350,7 @@ async function consume(remark: RemarkResult, eventAlias: RmrkEvent) {
 
   } catch (e) {
     logger.warn(`[${eventAlias}] ${e.message} ${JSON.stringify(interaction)}`);
-    await logFail(JSON.stringify(interaction), e.message, eventAlias);
+    await logFail(JSON.stringify(interaction), e.message, eventAlias, remark);
   }
 }
 
@@ -376,7 +376,7 @@ async function list(remark: RemarkResult) {
   } catch (e) {
 
     logger.warn(`[LIST] ${e.message} ${JSON.stringify(interaction)}`);
-    await logFail(JSON.stringify(interaction), e.message, RmrkEvent.LIST);
+    await logFail(JSON.stringify(interaction), e.message, RmrkEvent.LIST, remark);
   }
   // exists
   // not burned
@@ -402,7 +402,7 @@ async function changeIssuer(remark: RemarkResult) {
     await collection.save();
   } catch (e) {
     logger.warn(`[CHANGEISSUER] ${e.message} ${JSON.stringify(interaction)}`)
-    await logFail(JSON.stringify(interaction), e.message, RmrkEvent.CHANGEISSUER)
+    await logFail(JSON.stringify(interaction), e.message, RmrkEvent.CHANGEISSUER, remark)
   }
 
 
@@ -436,7 +436,7 @@ async function emote(remark: RemarkResult) {
 
   } catch (e) {
     logger.warn(`[EMOTE] ${e.message}`)
-    await logFail(JSON.stringify(interaction), e.message, RmrkEvent.EMOTE)
+    await logFail(JSON.stringify(interaction), e.message, RmrkEvent.EMOTE, remark)
   }
 
   // exists
@@ -445,13 +445,14 @@ async function emote(remark: RemarkResult) {
   // has meta
 }
 
-async function logFail(message: string, reason: string, interaction: RmrkEvent) {
+async function logFail(message: string, reason: string, interaction: RmrkEvent, remark: RemarkResult) {
   try {
     const fail = {
       id: randomBytes(20).toString('hex'),
       value: message,
       reason,
-      interaction
+      interaction,
+      remark: JSON.stringify(remark)
     }
 
     const entity = FailedEntity.create(fail)
@@ -525,7 +526,7 @@ async function accept(remark: RemarkResult) {
 
   } catch (e) {
     logger.warn(`[ACCEPT] ${e.message} ${JSON.stringify(interaction)}`);
-    await logFail(JSON.stringify(interaction), e.message, RmrkEvent.ACCEPT);
+    await logFail(JSON.stringify(interaction), e.message, RmrkEvent.ACCEPT, remark);
   }
 
 }
@@ -579,7 +580,7 @@ async function resAdd(remark: RemarkResult) {
 
   } catch (e) {
     logger.warn(`[RESADD] ${e.message} ${JSON.stringify(interaction)}`);
-    await logFail(JSON.stringify(interaction), e.message, RmrkEvent.RESADD);
+    await logFail(JSON.stringify(interaction), e.message, RmrkEvent.RESADD, remark);
   }
 
 }
