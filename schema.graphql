@@ -80,6 +80,10 @@ type Event @jsonField {
   caller: String!
   interaction: String
   meta: String!
+
+  interactionCollection: String
+  interactionNFT: String
+  interactionAccount: String
 }
 
 type EventEntity @entity {
@@ -89,6 +93,10 @@ type EventEntity @entity {
   caller: String!
   interaction: String
   meta: String!
+
+  interactionCollection: String
+  interactionNFT: String
+  interactionAccount: String
 }
 
 type Emote @entity {

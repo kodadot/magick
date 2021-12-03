@@ -38,14 +38,19 @@ export const getNftId = (nft: any, blocknumber?: string | number): string => {
 }
 export const getNftId_V01 = (nft: any): string => {
   return `${nft.collection}-${nft.instance || nft.name}-${nft.sn}`
-} 
-export function eventFrom(interaction: RmrkEvent, { blockNumber, caller, timestamp }: RemarkResult, meta: string): Event {
+}
+export function eventFrom(interaction: RmrkEvent, { blockNumber, caller, timestamp }: RemarkResult, meta: string, interactionCollection: string,
+  interactionNFT: string,
+  interactionAccount: string): Event {
   return {
     interaction,
     blockNumber,
     caller,
     timestamp,
-    meta
+    meta,
+    interactionCollection,
+    interactionNFT,
+    interactionAccount
   }
 }
 
