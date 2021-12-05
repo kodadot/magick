@@ -4,6 +4,7 @@ type RemarkEntity @entity {
   caller: String!
   blockNumber: String!
   interaction: String
+  timestamp: Date
 }
 
 type FailedEntity @entity {
@@ -12,6 +13,7 @@ type FailedEntity @entity {
   reason: String!
   interaction: String
   remark: String
+  timestamp: Date
 }
 
 type CollectionEntity @entity {
@@ -26,8 +28,9 @@ type CollectionEntity @entity {
   nfts: [NFTEntity] @derivedFrom(field: "collection")
   events: [Event]
   blockNumber: BigInt @index
-  createdAt: Date!
-  updatedAt: Date! @index
+
+  timestampCreatedAt: Date
+  timestampUpdatedAt: Date
 
   eventId: String
 }
@@ -47,8 +50,9 @@ type NFTEntity @entity {
   blockNumber: BigInt @index
   events: [Event]
   emotes: [Emote] @derivedFrom(field: "nft")
-  createdAt: Date!
-  updatedAt: Date! @index
+
+  timestampCreatedAt: Date
+  timestampUpdatedAt: Date
 
   priority: [String]
   resources: [Resource]
@@ -106,6 +110,7 @@ type Emote @entity {
   nft: NFTEntity!
   caller: String!
   value: String!
+  timestamp: Date
 }
 
 enum Interaction {

@@ -53,8 +53,8 @@ async function collection_V1(remark: RemarkResult) {
     final.blockNumber = BigInt(remark.blockNumber)
     final.metadata = collection.metadata
     final.events = [eventFrom(RmrkEvent.MINT, remark, '', collection.id, '', final.currentOwner, BigInt(0))];
-    final.createdAt = remark.timestamp;
-    final.updatedAt = remark.timestamp;
+    final.timestampCreatedAt = remark.timestamp;
+    final.timestampUpdatedAt = remark.timestamp;
 
     final.eventId = await saveEventEntities(final.events);
 
@@ -103,8 +103,8 @@ async function mintNFT_V1(remark: RemarkResult) {
     newNFT.price = BigInt(0);
     newNFT.burned = false;
     newNFT.events = [eventFrom(RmrkEvent.MINTNFT, remark, '', collection.id, newNFT.id, newNFT.currentOwner, newNFT.price)];
-    newNFT.createdAt = remark.timestamp;
-    newNFT.updatedAt = remark.timestamp;
+    newNFT.timestampCreatedAt = remark.timestamp;
+    newNFT.timestampUpdatedAt = remark.timestamp;
 
     newNFT.eventId = await saveEventEntities(newNFT.events);
 
@@ -141,8 +141,8 @@ async function mintNFT_V2(remark: RemarkResult) {
     newNFT.price = BigInt(0);
     newNFT.burned = false;
     newNFT.events = [eventFrom(RmrkEvent.MINTNFT, remark, '', collection.id, newNFT.id, newNFT.currentOwner, newNFT.price)];
-    newNFT.createdAt = remark.timestamp;
-    newNFT.updatedAt = remark.timestamp;
+    newNFT.timestampCreatedAt = remark.timestamp;
+    newNFT.timestampUpdatedAt = remark.timestamp;
 
     newNFT.eventId = await saveEventEntities(newNFT.events);
 
@@ -169,7 +169,7 @@ async function mintNFT_V2(remark: RemarkResult) {
         }
         let newNFTChild: NFTChild = { id: newNFT.id, equipped: '', pending: false };
         parentNFT.children.push(newNFTChild);
-        parentNFT.updatedAt = remark.timestamp;
+        parentNFT.timestampUpdatedAt = remark.timestamp;
         await parentNFT.save();
 
         logger.info(`SAVED [MINT_NFT V2 TO NFT] ${newNFT.id}`);
@@ -199,7 +199,7 @@ async function send_V1(remark: RemarkResult) {
       // currentNFT.price = BigInt(0);
       currentNFT.events.push(eventFrom(RmrkEvent.SEND, remark, interaction.recipient, currentNFT.collectionId, currentNFT.id, currentNFT.currentOwner, currentNFT.price));
       currentNFT.currentOwner = interaction.recipient;
-      currentNFT.updatedAt = remark.timestamp;
+      currentNFT.timestampUpdatedAt = remark.timestamp;
 
       currentNFT.eventId = await saveEventEntities(currentNFT.events);
 
@@ -233,7 +233,7 @@ async function send_V2(remark: RemarkResult) {
         // currentNFT.price = BigInt(0);
         currentNFT.events.push(eventFrom(RmrkEvent.SEND, remark, interaction.recipient, currentNFT.collectionId, currentNFT.id, currentNFT.currentOwner, currentNFT.price));
         currentNFT.currentOwner = interaction.recipient;
-        currentNFT.updatedAt = remark.timestamp;
+        currentNFT.timestampUpdatedAt = remark.timestamp;
 
         currentNFT.eventId = await saveEventEntities(currentNFT.events);
 
@@ -258,7 +258,7 @@ async function send_V2(remark: RemarkResult) {
           equipped: ''
         };
         targetNFT.children.push(nftChild);
-        targetNFT.updatedAt = remark.timestamp;
+        targetNFT.timestampUpdatedAt = remark.timestamp;
         await targetNFT.save();
 
         let currentOwner = currentNFT.currentOwner;
@@ -275,7 +275,7 @@ async function send_V2(remark: RemarkResult) {
               });
               if (findIndex >= 0) {
                 parent.children.splice(findIndex, 1);
-                parent.updatedAt = remark.timestamp;
+                parent.timestampUpdatedAt = remark.timestamp;
                 await parent.save();
               }
             }
@@ -283,7 +283,7 @@ async function send_V2(remark: RemarkResult) {
           //update currentNFT.currentOwner =>  targetNFT.id             
           currentNFT.events.push(eventFrom(RmrkEvent.SEND, remark, interaction.recipient, currentNFT.collectionId, currentNFT.id, currentNFT.currentOwner, currentNFT.price));
           currentNFT.currentOwner = targetNFT.id;
-          currentNFT.updatedAt = remark.timestamp;
+          currentNFT.timestampUpdatedAt = remark.timestamp;
 
           currentNFT.eventId = await saveEventEntities(currentNFT.events);
 
@@ -313,7 +313,7 @@ async function buy(remark: RemarkResult) {
     nft.price = BigInt(unwrapBuyPrice(nft, remark.extra || []));  // Utility.batch_all => price for BUY
     nft.events.push(eventFrom(RmrkEvent.BUY, remark, remark.caller, nft.collectionId, nft.id, nft.currentOwner, nft.price))
     nft.currentOwner = remark.caller
-    nft.updatedAt = remark.timestamp
+    nft.timestampUpdatedAt = remark.timestamp
 
     nft.eventId = await saveEventEntities(nft.events);
 
@@ -345,7 +345,7 @@ async function consume(remark: RemarkResult, eventAlias: RmrkEvent) {
     nft.price = BigInt(0);
     nft.burned = true;
     nft.events.push(eventFrom(eventAlias, remark, interaction.metadata, nft.collectionId, nft.id, nft.currentOwner, nft.price));
-    nft.updatedAt = remark.timestamp;
+    nft.timestampUpdatedAt = remark.timestamp;
 
     nft.eventId = await saveEventEntities(nft.events);
 
@@ -371,7 +371,7 @@ async function list(remark: RemarkResult) {
     isPositiveOrElseError(price);
     nft.price = price;
     nft.events.push(eventFrom(RmrkEvent.LIST, remark, interaction.metadata, nft.collectionId, nft.id, nft.currentOwner, nft.price));
-    nft.updatedAt = remark.timestamp;
+    nft.timestampUpdatedAt = remark.timestamp;
 
     nft.eventId = await saveEventEntities(nft.events);
 
@@ -521,7 +521,7 @@ async function accept(remark: RemarkResult) {
     }
 
     nft.events.push(eventFrom(RmrkEvent.ACCEPT, remark, interaction.id2, nft.collectionId, nft.id, nft.currentOwner, nft.price));
-    nft.updatedAt = remark.timestamp;
+    nft.timestampUpdatedAt = remark.timestamp;
 
     nft.eventId = await saveEventEntities(nft.events);
 
@@ -575,7 +575,7 @@ async function resAdd(remark: RemarkResult) {
 
     nft.resources.push(newResource);
     nft.events.push(eventFrom(RmrkEvent.RESADD, remark, interaction.metadata, nft.collectionId, nft.id, nft.currentOwner, nft.price));
-    nft.updatedAt = remark.timestamp;
+    nft.timestampUpdatedAt = remark.timestamp;
 
     nft.eventId = await saveEventEntities(nft.events);
 
