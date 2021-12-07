@@ -45,6 +45,14 @@ async function collection_V1(remark: RemarkResult) {
     canOrElseError<CollectionEntity>(exists, entity)
     const final = CollectionEntity.create(collection)
 
+    if (!collection.symbol) {
+      collection.symbol = '';
+    }
+
+    if (!collection.name) {
+      collection.name = collection.symbol;
+    }
+
     final.name = collection.name.trim()
     final.max = Number(collection.max)
     final.issuer = remark.caller
