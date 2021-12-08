@@ -88,6 +88,7 @@ async function mintNFT_V1(remark: RemarkResult) {
     nft = NFTUtils.unwrap(remark.value) as NFT;
     canOrElseError<string>(exists, nft.collection, true);
 
+     //TODO 有的collection不存在，需要创建出来
     const collection = await CollectionEntity.get(nft.collection);
     canOrElseError<CollectionEntity>(exists, collection, true);
 
@@ -131,6 +132,7 @@ async function mintNFT_V2(remark: RemarkResult) {
     let recipient = NFTUtils.unwrap_V2_MINT_RECIPIENT(remark.value);
     canOrElseError<string>(exists, nft.collection, true);
 
+    //TODO 有的collection不存在，需要创建出来
     const collection = await CollectionEntity.get(nft.collection);
     canOrElseError<CollectionEntity>(exists, collection, true);
     isOwnerOrElseError(collection, remark.caller);
