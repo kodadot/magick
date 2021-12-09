@@ -579,17 +579,32 @@ async function resAdd(remark: RemarkResult) {
 
 export async function handleRemark(extrinsic: SubstrateExtrinsic): Promise<void> {
   const records = getRemarksFrom(extrinsic);
+  logger.info(`finish getRemarksFrom`);
 
   //save remark entity
-  let remarkEntities = records.map((r, i) => ({
-    ...r,
-    id: `${r.blockNumber}-${i}`,
-    interaction: NFTUtils.getAction(hexToString(r.value)),
-    extra: JSON.stringify(r.extra),
-    specVersion: NFTUtils.getRmrkSpecVersion(hexToString(r.value)),
-    processed: 0
-  }))
-    .map(RemarkEntity.create);
+  let remarkEntities: RemarkEntity[] = [];
+  for (let index = 0; index < records.length; index++) {
+    const r = records[index];
+    let interaction = NFTUtils.getAction(hexToString(r.value));
+    logger.info(`finish getAction`);
+    let extra = JSON.stringify(r.extra || []);
+    logger.info(`finish extra`);
+    let specVersion = NFTUtils.getRmrkSpecVersion(hexToString(r.value));
+    logger.info(`finish getRmrkSpecVersion`);
+
+    let d = {
+      ...r,
+      id: `${r.blockNumber}-${index}`,
+      interaction: interaction,
+      extra: extra,
+      specVersion: specVersion,
+      processed: 0
+    };
+
+    remarkEntities.push(RemarkEntity.create(d));
+  }
+
+  logger.info(`start save remarkEntity`);
   for (const remarkEntity of remarkEntities) {
     try {
       await remarkEntity.save();
@@ -600,7 +615,7 @@ export async function handleRemark(extrinsic: SubstrateExtrinsic): Promise<void>
   }
 
   return;
-  
+
   //handle interaction
   for (const remark of records) {
     try {
