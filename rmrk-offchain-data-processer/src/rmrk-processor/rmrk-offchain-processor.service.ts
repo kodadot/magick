@@ -695,7 +695,7 @@ export class RMRKOffchainProcessorService {
     try {
       let now = new Date();
       let fail: FailedEntities = {
-        id: now.getTime + '-' + randomBytes(5).toString('hex'),
+        id: now.getTime() + '-' + randomBytes(5).toString('hex'),
         value: message,
         reason,
         interaction,
