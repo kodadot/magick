@@ -599,6 +599,8 @@ export async function handleRemark(extrinsic: SubstrateExtrinsic): Promise<void>
     }
   }
 
+  return;
+  
   //handle interaction
   for (const remark of records) {
     try {
