@@ -267,6 +267,43 @@ export class RMRKOffchainProcessorService {
   }
 
 
+  // collection does not exist , error logic to mintNFT.
+  // The mint should be called before minNFT.
+  // But there are some records that call minNFT directly.
+  // So we need to  create the missing collection automatically.
+  async checkCollection(collection: CollectionEntities, nft: NFT, specVersion: RmrkSpecVersion, remark: RemarkResult): Promise<CollectionEntities> {
+    if (collection && collection.id) {
+      return collection;
+    }
+    else {
+
+      if (nft && nft.collection) {
+        const newCollection = new CollectionEntities();
+        newCollection.id = nft.collection;
+        newCollection.symbol = nft.collection;
+        newCollection.name = nft.collection;
+        newCollection.version = specVersion;
+        newCollection.max = 9999;
+        newCollection.issuer = remark.caller;
+        newCollection.currentOwner = remark.caller;
+        newCollection.blockNumber = remark.blockNumber;
+        newCollection.metadata = '';
+        newCollection.events = [eventFrom(RmrkEvent.MINT, remark, '', newCollection.id, '', newCollection.currentOwner, BigInt(0).toString())];
+        newCollection.timestampCreatedAt = remark.timestamp;
+        newCollection.timestampUpdatedAt = remark.timestamp;
+        newCollection.eventId = await this.saveEventEntities(newCollection.events);
+
+        MyLogger.verbose(`SAVED [COLLECTION] ${newCollection.id}`)
+        await this.collectionRepository.save(newCollection);
+
+        return newCollection;
+      }
+
+    }
+    canOrElseError<CollectionEntities>(exists, collection, true);
+  }
+
+
   async mintNFT_V1(remark: RemarkResult) {
     let nft = null;
     const specVersion: RmrkSpecVersion = NFTUtils.getRmrkSpecVersion(remark.value)
@@ -276,9 +313,8 @@ export class RMRKOffchainProcessorService {
       nft = NFTUtils.unwrap(remark.value) as NFT;
       canOrElseError<string>(exists, nft.collection, true);
 
-      //TODO  collection does not exist , error logic to mintNFT. consider to create collection.
-      const collection = await this.collectionRepository.findOne(nft.collection);
-      canOrElseError<CollectionEntities>(exists, collection, true);
+      let collection = await this.collectionRepository.findOne(nft.collection);
+      collection = await this.checkCollection(collection, nft, RmrkSpecVersion.V1, remark);
 
       isOwnerOrElseError(collection, remark.caller);
 
@@ -321,9 +357,9 @@ export class RMRKOffchainProcessorService {
       let recipient = NFTUtils.unwrap_V2_MINT_RECIPIENT(remark.value);
       canOrElseError<string>(exists, nft.collection, true);
 
-      //TODO  collection does not exist , error logic to mintNFT. consider to create collection.
-      const collection = await this.collectionRepository.findOne(nft.collection);
-      canOrElseError<CollectionEntities>(exists, collection, true);
+      let collection = await this.collectionRepository.findOne(nft.collection);
+      collection = await this.checkCollection(collection, nft, RmrkSpecVersion.V1, remark);
+
       isOwnerOrElseError(collection, remark.caller);
 
       nft.id = getNftId(nft, remark.blockNumber);
