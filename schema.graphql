@@ -5,6 +5,9 @@ type RemarkEntity @entity {
   blockNumber: String!
   interaction: String
   timestamp: Date
+  extra: String
+  specVersion: String
+  processed: Int
 }
 
 type FailedEntity @entity {

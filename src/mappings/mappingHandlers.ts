@@ -88,7 +88,7 @@ async function mintNFT_V1(remark: RemarkResult) {
     nft = NFTUtils.unwrap(remark.value) as NFT;
     canOrElseError<string>(exists, nft.collection, true);
 
-     //TODO 有的collection不存在，需要创建出来
+    //TODO  collection does not exist , error logic to mintNFT. consider to create collection.
     const collection = await CollectionEntity.get(nft.collection);
     canOrElseError<CollectionEntity>(exists, collection, true);
 
@@ -132,7 +132,7 @@ async function mintNFT_V2(remark: RemarkResult) {
     let recipient = NFTUtils.unwrap_V2_MINT_RECIPIENT(remark.value);
     canOrElseError<string>(exists, nft.collection, true);
 
-    //TODO 有的collection不存在，需要创建出来
+    //TODO  collection does not exist , error logic to mintNFT. consider to create collection.
     const collection = await CollectionEntity.get(nft.collection);
     canOrElseError<CollectionEntity>(exists, collection, true);
     isOwnerOrElseError(collection, remark.caller);
@@ -476,27 +476,6 @@ async function logFail(message: string, reason: string, interaction: RmrkEvent, 
   }
 }
 
-
-export async function handleCall(extrinsic: SubstrateExtrinsic): Promise<void> {
-  const records = getRemarksFrom(extrinsic)
-    .map((r, i) => {
-      try {
-        return { ...r, id: `${r.blockNumber}-${i}`, interaction: NFTUtils.getAction(hexToString(r.value)) }
-      } catch (e) {
-        return { ...r, id: `${r.blockNumber}-${i}`, interaction: hexToString(r.value) }
-      }
-    })
-    .map(RemarkEntity.create);
-
-  for (const record of records) {
-    try {
-      await record.save()
-    } catch (e) {
-      logger.warn(`[ERR] Can't save RMRK at block ${record.blockNumber} because \n${e}`)
-    }
-  }
-}
-
 async function accept(remark: RemarkResult) {
 
   let interaction: RmrkAcceptInteraction = null
@@ -602,23 +581,30 @@ export async function handleRemark(extrinsic: SubstrateExtrinsic): Promise<void>
   const records = getRemarksFrom(extrinsic);
 
   //save remark entity
-  let remarkEntities = records.map((r, i) => ({ ...r, id: `${r.blockNumber}-${i}` }))
+  let remarkEntities = records.map((r, i) => ({
+    ...r,
+    id: `${r.blockNumber}-${i}`,
+    interaction: NFTUtils.getAction(hexToString(r.value)),
+    extra: JSON.stringify(r.extra),
+    specVersion: NFTUtils.getRmrkSpecVersion(hexToString(r.value)),
+    processed: 0
+  }))
     .map(RemarkEntity.create);
   for (const remarkEntity of remarkEntities) {
     try {
-      await remarkEntity.save()
-      logger.info(`[Saved RMRK] ${remarkEntity.id}`)
+      await remarkEntity.save();
+      logger.info(`[Saved RMRK Remark] ${remarkEntity.id}`);
     } catch (e) {
-      logger.warn(`[ERR] Can't save RMRK at block ${remarkEntity.blockNumber} because \n${e}`)
+      logger.warn(`[ERR] Can't save RMRK Remark at block ${remarkEntity.blockNumber} because \n${e}`);
     }
   }
 
   //handle interaction
   for (const remark of records) {
     try {
-      const decoded = hexToString(remark.value)
-      const event: RmrkEvent = NFTUtils.getAction(decoded)
-      const specVersion: RmrkSpecVersion = NFTUtils.getRmrkSpecVersion(decoded)
+      const decoded = hexToString(remark.value);
+      const event: RmrkEvent = NFTUtils.getAction(decoded);
+      const specVersion: RmrkSpecVersion = NFTUtils.getRmrkSpecVersion(decoded);
 
       switch (event) {
         case RmrkEvent.CREATE:
