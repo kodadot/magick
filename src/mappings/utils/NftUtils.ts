@@ -108,7 +108,10 @@ class NFTUtils {
       return RmrkEvent.CREATE
     }
 
-    throw new EvalError(`[NFTUtils] Unable to get action from ${rmrkString}`);
+    //throw new EvalError(`[NFTUtils] Unable to get action from ${rmrkString}`);
+    logger.error(`[NFTUtils] Unable to get action from ${rmrkString}`);
+
+    return RmrkEvent.UNKNOWN;
 
   }
 
@@ -195,7 +198,7 @@ class NFTUtils {
       logger.error(`splitRmrkString.decodeURIComponent exception ${e}`);
       decoded = rmrk;
     }
-    
+
     const split = decoded.split(SQUARE);
     return split;
 

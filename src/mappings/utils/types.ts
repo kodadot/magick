@@ -31,6 +31,9 @@ export enum RmrkEvent {
   SETPRIORITY = 'SETPRIORITY',
   SETPROPERTY = 'SETPROPERTY',
   LOCK = 'LOCK',
+
+  //UNKNOWN
+  UNKNOWN = 'UNKNOWN'
 }
 
 export const getNftId = (nft: any, blocknumber?: string | number): string => {
