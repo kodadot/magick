@@ -790,7 +790,7 @@ export class RMRKOffchainProcessorService {
 
       let resId = json.id || '';
       let resSrc = json.src || '';
-      let resMetadata = json.metadata || '';
+      let resMetadata = metadataJson || '';
 
       if (!resId) {
         throw new TypeError(`RMRK: invalid resource id`)
