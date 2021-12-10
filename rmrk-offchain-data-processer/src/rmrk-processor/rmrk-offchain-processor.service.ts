@@ -116,7 +116,9 @@ export class RMRKOffchainProcessorService {
 
   }
   async handleRemark(remarkRecords: RemarkEntities[]) {
-    for (const remarkEntity of remarkRecords) {
+    for (let index = 0; index < remarkRecords.length; index++) {
+      MyLogger.verbose('handleRemark index=' + index);
+      const remarkEntity = remarkRecords[index];
 
       let handleRemarkResult = 0;
       try {
