@@ -64,7 +64,7 @@ export class RMRKOffchainProcessorService {
             processed: 0
           },
           order: {
-            blockNumber: 'ASC'
+            timestamp: 'ASC'
           },
           take: this.processBatchSize,
         });
