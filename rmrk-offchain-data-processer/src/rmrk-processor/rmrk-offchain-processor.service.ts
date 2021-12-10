@@ -14,7 +14,7 @@ import { FailedEntities } from 'src/common/entity/RMRKModule/FailedEntities';
 import { RemarkEntities } from 'src/common/entity/RMRKModule/RemarkEntities';
 import { MyLogger } from 'src/common/log/logger.service';
 import { FunctionExt } from 'src/common/utility/functionExt';
-import { Collection, eventFrom, getNftId, getNftId_V01, NFT, RmrkAcceptInteraction, RmrkAcceptType, RmrkEvent, RmrkInteraction, RmrkSendInteraction, RmrkSpecVersion } from './support/utils/types';
+import { Collection, eventFrom, getNftId_V01, getNftId_V1, getNftId_V2, NFT, RmrkAcceptInteraction, RmrkAcceptType, RmrkEvent, RmrkInteraction, RmrkResAddInteraction, RmrkSendInteraction, RmrkSpecVersion } from './support/utils/types';
 import NFTUtils, { hexToString } from './support/utils/NftUtils';
 import { RemarkResult } from './support/utils';
 import { canOrElseError, exists, hasMeta, isBurned, isBuyLegalOrElseError, isOwner, isOwnerOrElseError, isPositiveOrElseError, isTransferable, unwrapBuyPrice, validateMeta, validateNFT } from './support/utils/consolidator';
@@ -326,7 +326,7 @@ export class RMRKOffchainProcessorService {
       if (specVersion === RmrkSpecVersion.V01) {
         nft.id = getNftId_V01(nft);
       } else if (specVersion === RmrkSpecVersion.V1) {
-        nft.id = getNftId(nft, remark.blockNumber);
+        nft.id = getNftId_V1(nft, remark.blockNumber);
       }
       const newNFT = new NFTEntities();
       newNFT.id = nft.id;
@@ -367,7 +367,7 @@ export class RMRKOffchainProcessorService {
 
       isOwnerOrElseError(collection, remark.caller);
 
-      nft.id = getNftId(nft, remark.blockNumber);
+      nft.id = getNftId_V2(nft, remark.blockNumber);
       const newNFT = new NFTEntities();
       newNFT.id = nft.id;
       newNFT.issuer = remark.caller;
@@ -406,12 +406,14 @@ export class RMRKOffchainProcessorService {
         else {
           // mint nft to the specified nft as child 
 
-          let children = parentNFT.children;
-          if (!children) {
-            children = [];
+          if (!parentNFT.children) {
+            parentNFT.children = [];
           }
           let newNFTChild: NFTChild = { id: newNFT.id, equipped: '', pending: false };
-          (children as any[]).push(newNFTChild);
+          let children = (parentNFT.children as any[]);
+          children.push(newNFTChild);
+          parentNFT.children = children;
+
           parentNFT.timestampUpdatedAt = remark.timestamp;
           await this.nftRepository.save(parentNFT);
 
@@ -492,15 +494,18 @@ export class RMRKOffchainProcessorService {
             pending = false;
           }
 
-          if (!targetNFT.children) {
-            targetNFT.children = [];
-          }
+
           let nftChild: NFTChild = {
             id: currentNFT.id,
             pending: pending,
             equipped: ''
           };
-          (targetNFT.children as any[]).push(nftChild);
+          if (!targetNFT.children) {
+            targetNFT.children = [];
+          }
+          let children = (targetNFT.children as any[]);
+          children.push(nftChild);
+          targetNFT.children = children;
           targetNFT.timestampUpdatedAt = remark.timestamp;
           await this.nftRepository.save(targetNFT);
 
@@ -520,6 +525,7 @@ export class RMRKOffchainProcessorService {
                 });
                 if (findIndex >= 0) {
                   chilren.splice(findIndex, 1);
+                  parent.children = chilren;
                   parent.timestampUpdatedAt = remark.timestamp;
                   await this.nftRepository.save(parent);
                 }
@@ -736,6 +742,7 @@ export class RMRKOffchainProcessorService {
               res.pending = false;
             }
           }
+          nft.resources = resources;
         }
       }
       else if (entity === RmrkAcceptType.NFT) {
@@ -748,7 +755,9 @@ export class RMRKOffchainProcessorService {
               child.pending = false;
             }
           }
+          nft.children = children;
         }
+
       }
 
       let event = eventFrom(RmrkEvent.ACCEPT, remark, interaction.id2, nft.collectionId, nft.id, nft.currentOwner, nft.price);
@@ -768,12 +777,12 @@ export class RMRKOffchainProcessorService {
 
     let interaction = null
     try {
-      interaction = ensureInteraction(NFTUtils.unwrap(remark.value) as RmrkInteraction)
+      interaction = ensureInteraction(NFTUtils.unwrap_RESADD(remark.value) as RmrkResAddInteraction)
       const nft = await this.nftRepository.findOne(interaction.id)
       canOrElseError<NFTEntities>(exists, nft, true)
       canOrElseError<NFTEntities>(isBurned, nft)
 
-      let metadataJson = NFTUtils.decodeRmrk(interaction.metadata);
+      let metadataJson = interaction.metadata;
       let json = JSON.parse(metadataJson);
       if (!json) {
         throw new TypeError(`RMRK: Unable to parse metadata as JSON object: ${interaction.metadata}`)
@@ -790,7 +799,9 @@ export class RMRKOffchainProcessorService {
       if (!nft.priority) {
         nft.priority = [];
       }
-      (nft.priority as any[]).push(resId);
+      let priority = (nft.priority as any[]);
+      priority.push(resId);
+      nft.priority = priority;
 
       let newResource: Resource = {
         id: resId,
@@ -803,8 +814,13 @@ export class RMRKOffchainProcessorService {
         //auto ACCEPT
         newResource.pending = false;
       }
+      if (!nft.resources) {
+        nft.resources = [];
+      }
+      let resources = (nft.resources as any[]);
+      resources.push(newResource);
+      nft.resources = resources;
 
-      (nft.resources as any[]).push(newResource);
       let event = (eventFrom(RmrkEvent.RESADD, remark, interaction.metadata, nft.collectionId, nft.id, nft.currentOwner, nft.price));
       nft.timestampUpdatedAt = remark.timestamp;
 

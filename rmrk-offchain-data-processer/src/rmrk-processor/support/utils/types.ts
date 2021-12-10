@@ -33,11 +33,15 @@ export enum RmrkEvent {
   LOCK = 'LOCK',
 }
 
-export const getNftId = (nft: any, blocknumber?: string | number): string => {
-  return `${blocknumber ? blocknumber + '-' : ''}${nft.collection}-${nft.instance || nft.name}-${nft.sn}`
-}
+
 export const getNftId_V01 = (nft: any): string => {
-  return `${nft.collection}-${nft.instance || nft.name}-${nft.sn}`
+  return `${nft.collection}-${nft.name}-${nft.sn}`;
+}
+export const getNftId_V1 = (nft: any, blocknumber?: string | number): string => {
+  return `${blocknumber ? blocknumber + '-' : ''}${nft.collection}-${nft.instance}-${nft.sn}`
+}
+export const getNftId_V2 = (nft: any, blocknumber?: string | number): string => {
+  return `${blocknumber ? blocknumber + '-' : ''}${nft.collection}-${nft.symbol}-${nft.sn}`;
 }
 export function eventFrom(interaction: RmrkEvent,
   { blockNumber, caller, timestamp }: RemarkResult,
@@ -64,6 +68,11 @@ export interface RmrkInteraction {
   id: string;
   metadata?: string;
 }
+export interface RmrkResAddInteraction {
+  id: string;
+  metadata?: string;
+}
+
 export enum RmrkSpecVersion {
   V01 = "0.1",
   V1 = "1.0.0",

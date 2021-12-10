@@ -1,5 +1,5 @@
 import { trim } from './helper';
-import { RmrkEvent, RMRK, RmrkInteraction, RmrkAcceptInteraction, RmrkSendInteraction, RmrkSpecVersion } from './types';
+import { RmrkEvent, RMRK, RmrkInteraction, RmrkAcceptInteraction, RmrkSendInteraction, RmrkSpecVersion, RmrkResAddInteraction } from './types';
 const SQUARE = '::'
 
 export function isHex(text: string) {
@@ -183,7 +183,21 @@ class NFTUtils {
     }
   }
 
+  public static unwrap_RESADD(rmrkString: string): any {
+    try {
 
+      const split = NFTUtils.splitRmrkString(rmrkString);
+      if (split.length >= 5) {
+        return ({
+          id: trim(split[3]),
+          metadata: (split[4])
+        } as RmrkResAddInteraction)
+      }
+      throw new TypeError(`RMRK: Unable to unwrap ACCEPT object ${rmrkString}`)
+    } catch (e) {
+      throw e
+    }
+  }
   private static splitRmrkString(rmrkString: string): string[] {
     const rmrk = isHex(rmrkString) ? hexToString(rmrkString) : rmrkString
     try {
