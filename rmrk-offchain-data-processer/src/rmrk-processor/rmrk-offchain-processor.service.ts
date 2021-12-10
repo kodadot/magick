@@ -130,6 +130,8 @@ export class RMRKOffchainProcessorService {
         const event: RmrkEvent = NFTUtils.getAction(decoded);
         const specVersion: RmrkSpecVersion = NFTUtils.getRmrkSpecVersion(decoded);
 
+        MyLogger.verbose('handleRemark event=' + event + ',specVersion=' + specVersion + ',decoded=' + decoded);
+
         switch (event) {
           case RmrkEvent.CREATE:
             if (specVersion == RmrkSpecVersion.V2) {
