@@ -25,7 +25,7 @@ import { randomBytes } from 'crypto';
 export class RMRKOffchainProcessorService {
   truncateFlag: boolean = false;
   runFlag: boolean = true;
-  interval: number = 1 * 1000;
+  interval: number = 1 * 100;
   processBatchSize = 100;
 
   constructor(
@@ -198,32 +198,27 @@ export class RMRKOffchainProcessorService {
     }
   }
 
-  async saveEventEntities(eventsObj?: object | Event[]): Promise<string> {
-    let eventId = '';
-    if (eventsObj) {
-      let events = eventsObj as Event[];
-      for (let index = 0; index < events.length; index++) {
-        const event = events[index];
-        let id = (event.blockNumber) + '-' + index;
-        let entity = new EventEntities();
-        entity.id = id;
-        entity.blockNumber = event.blockNumber;
-        entity.timestamp = event.timestamp;
-        entity.caller = event.caller;
-        entity.interaction = event.interaction;
-        entity.meta = event.meta;
-        entity.interactionCollection = event.interactionCollection || '';
-        entity.interactionNFT = event.interactionNFT || '';
-        entity.interactionAccount = event.interactionAccount || '';
-        entity.nftPrice = BigInt(event.nftPrice || 0);
-        await this.eventRepository.save(entity);
-        if (eventId) {
-          eventId += ",";
-        }
-        eventId += entity.id;
-      }
+  async saveEventEntities(event: Event, originalEventId: string): Promise<string> {
+    let id = (event.blockNumber) + '-' + (new Date()).getTime();
+    let entity = new EventEntities();
+    entity.id = id;
+    entity.blockNumber = event.blockNumber;
+    entity.timestamp = event.timestamp;
+    entity.caller = event.caller;
+    entity.interaction = event.interaction;
+    entity.meta = event.meta;
+    entity.interactionCollection = event.interactionCollection || '';
+    entity.interactionNFT = event.interactionNFT || '';
+    entity.interactionAccount = event.interactionAccount || '';
+    entity.nftPrice = BigInt(event.nftPrice || 0);
+    await this.eventRepository.save(entity);
+    if (originalEventId) {
+      originalEventId += "," + entity.id;
     }
-    return eventId;
+    else {
+      originalEventId = entity.id;
+    }
+    return originalEventId;
   }
 
   async collection_V1(remark: RemarkResult, version: RmrkSpecVersion) {
@@ -256,7 +251,7 @@ export class RMRKOffchainProcessorService {
       newCollection.timestampUpdatedAt = remark.timestamp;
 
       let event = eventFrom(RmrkEvent.MINT, remark, '', collection.id, '', newCollection.currentOwner, BigInt(0).toString());
-      newCollection.eventId = await this.saveEventEntities(event);
+      newCollection.eventId = await this.saveEventEntities(event, newCollection.eventId);
 
       MyLogger.verbose(`SAVED [COLLECTION] ${newCollection.id}`)
       await this.collectionRepository.save(newCollection)
@@ -296,7 +291,7 @@ export class RMRKOffchainProcessorService {
         newCollection.timestampUpdatedAt = remark.timestamp;
 
         let event = eventFrom(RmrkEvent.MINT, remark, '', newCollection.id, '', newCollection.currentOwner, BigInt(0).toString());
-        newCollection.eventId = await this.saveEventEntities(event);
+        newCollection.eventId = await this.saveEventEntities(event, newCollection.eventId);
 
         MyLogger.verbose(`SAVED [COLLECTION] ${newCollection.id}`)
         await this.collectionRepository.save(newCollection);
@@ -345,7 +340,7 @@ export class RMRKOffchainProcessorService {
       newNFT.timestampUpdatedAt = remark.timestamp;
 
       let event = eventFrom(RmrkEvent.MINTNFT, remark, '', collection.id, newNFT.id, newNFT.currentOwner, (newNFT.price));
-      newNFT.eventId = await this.saveEventEntities(event);
+      newNFT.eventId = await this.saveEventEntities(event, newNFT.eventId);
 
       MyLogger.verbose(`SAVED [MINT_NFT ${specVersion} SIMPLE] ${newNFT.id}`)
       await this.nftRepository.save(newNFT);
@@ -385,7 +380,7 @@ export class RMRKOffchainProcessorService {
       newNFT.timestampUpdatedAt = remark.timestamp;
 
       let event = eventFrom(RmrkEvent.MINTNFT, remark, '', collection.id, newNFT.id, newNFT.currentOwner, newNFT.price);
-      newNFT.eventId = await this.saveEventEntities(event);
+      newNFT.eventId = await this.saveEventEntities(event, newNFT.eventId);
 
       if (!recipient) {
 
@@ -446,7 +441,7 @@ export class RMRKOffchainProcessorService {
         currentNFT.currentOwner = interaction.recipient;
         currentNFT.timestampUpdatedAt = remark.timestamp;
 
-        currentNFT.eventId = await this.saveEventEntities(event);
+        currentNFT.eventId = await this.saveEventEntities(event, currentNFT.eventId);
 
         await this.nftRepository.save(currentNFT)
       }
@@ -480,7 +475,7 @@ export class RMRKOffchainProcessorService {
           currentNFT.currentOwner = interaction.recipient;
           currentNFT.timestampUpdatedAt = remark.timestamp;
 
-          currentNFT.eventId = await this.saveEventEntities(event);
+          currentNFT.eventId = await this.saveEventEntities(event, currentNFT.eventId);
 
           await this.nftRepository.save(currentNFT);
 
@@ -536,7 +531,7 @@ export class RMRKOffchainProcessorService {
             currentNFT.currentOwner = targetNFT.id;
             currentNFT.timestampUpdatedAt = remark.timestamp;
 
-            currentNFT.eventId = await this.saveEventEntities(event);
+            currentNFT.eventId = await this.saveEventEntities(event, currentNFT.eventId);
 
             await this.nftRepository.save(currentNFT);
 
@@ -571,7 +566,7 @@ export class RMRKOffchainProcessorService {
       nft.currentOwner = remark.caller;
       nft.timestampUpdatedAt = remark.timestamp;
 
-      nft.eventId = await this.saveEventEntities(event);
+      nft.eventId = await this.saveEventEntities(event, nft.eventId);
 
 
       await this.nftRepository.save(nft);
@@ -599,7 +594,7 @@ export class RMRKOffchainProcessorService {
       let event = eventFrom(eventAlias, remark, interaction.metadata, nft.collectionId, nft.id, nft.currentOwner, nft.price);
       nft.timestampUpdatedAt = remark.timestamp;
 
-      nft.eventId = await this.saveEventEntities(event);
+      nft.eventId = await this.saveEventEntities(event, nft.eventId);
 
       await this.nftRepository.save(nft);
 
@@ -624,7 +619,7 @@ export class RMRKOffchainProcessorService {
       let event = eventFrom(RmrkEvent.LIST, remark, interaction.metadata, nft.collectionId, nft.id, nft.currentOwner, nft.price);
       nft.timestampUpdatedAt = remark.timestamp;
 
-      nft.eventId = await this.saveEventEntities(event);
+      nft.eventId = await this.saveEventEntities(event, nft.eventId);
 
       await this.nftRepository.save(nft);
 
@@ -652,7 +647,7 @@ export class RMRKOffchainProcessorService {
       isOwnerOrElseError(collection, remark.caller);
       let event = (eventFrom(RmrkEvent.CHANGEISSUER, remark, interaction.metadata, collection.id, '', collection.currentOwner, BigInt(0).toString()))
       collection.currentOwner = interaction.metadata;
-      collection.eventId = await this.saveEventEntities(event);
+      collection.eventId = await this.saveEventEntities(event, collection.eventId);
 
       await this.collectionRepository.save(collection);
     } catch (e) {
@@ -763,7 +758,7 @@ export class RMRKOffchainProcessorService {
       let event = eventFrom(RmrkEvent.ACCEPT, remark, interaction.id2, nft.collectionId, nft.id, nft.currentOwner, nft.price);
       nft.timestampUpdatedAt = remark.timestamp;
 
-      nft.eventId = await this.saveEventEntities(event);
+      nft.eventId = await this.saveEventEntities(event, nft.eventId);
 
       await this.nftRepository.save(nft);
 
@@ -824,7 +819,7 @@ export class RMRKOffchainProcessorService {
       let event = (eventFrom(RmrkEvent.RESADD, remark, interaction.metadata, nft.collectionId, nft.id, nft.currentOwner, nft.price));
       nft.timestampUpdatedAt = remark.timestamp;
 
-      nft.eventId = await this.saveEventEntities(event);
+      nft.eventId = await this.saveEventEntities(event, nft.eventId);
 
       await this.nftRepository.save(nft);
 
