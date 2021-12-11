@@ -328,7 +328,7 @@ export class RMRKOffchainProcessorService {
       newNFT.issuer = remark.caller;
       newNFT.currentOwner = remark.caller;
       newNFT.blockNumber = remark.blockNumber;
-      newNFT.name = nft.name;
+      newNFT.name = nft.name || nft.instance;
       newNFT.instance = nft.instance;
       newNFT.transferable = nft.transferable;
       newNFT.collectionId = nft.collection;
@@ -368,7 +368,7 @@ export class RMRKOffchainProcessorService {
       newNFT.issuer = remark.caller;
       newNFT.currentOwner = remark.caller;
       newNFT.blockNumber = remark.blockNumber;
-      newNFT.name = nft.name;
+      newNFT.name = nft.symbol || nft.name || nft.instance;
       newNFT.instance = nft.instance;
       newNFT.transferable = nft.transferable;
       newNFT.collectionId = nft.collection;
