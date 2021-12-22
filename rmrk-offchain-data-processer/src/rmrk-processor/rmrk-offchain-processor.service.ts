@@ -25,7 +25,7 @@ import { randomBytes } from 'crypto';
 export class RMRKOffchainProcessorService {
   truncateFlag: boolean = false;
   runFlag: boolean = true;
-  interval: number = 1 * 100;
+  interval: number = 600 * 100;
   processBatchSize = 100;
 
   constructor(
