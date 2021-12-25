@@ -116,16 +116,4 @@ type Emote @entity {
   timestamp: Date
 }
 
-enum Interaction {
-  MINT
-  MINTNFT
-  LIST
-  BUY
-  CONSUME
-  EMOTE
 
-  BURN
-  SEND
-  RESADD
-  ACCEPT
-}

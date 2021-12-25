@@ -66,28 +66,3 @@ export enum __DirectiveLocation {
 }
 
 
-export enum Interaction {
-
-    MINT = "MINT",
-
-    MINTNFT = "MINTNFT",
-
-    LIST = "LIST",
-
-    BUY = "BUY",
-
-    CONSUME = "CONSUME",
-
-    EMOTE = "EMOTE",
-
-    BURN = "BURN",
-
-    SEND = "SEND",
-
-    RESADD = "RESADD",
-
-    ACCEPT = "ACCEPT",
-
-}
-
-
