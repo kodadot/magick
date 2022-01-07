@@ -782,9 +782,7 @@ async function resAdd(remark: RemarkResult) {
     );
   }
 }
-
-const RUN_ON_SUBQUERY_HOST: boolean = true;
-
+ 
 export async function handleRemark(
   extrinsic: SubstrateExtrinsic
 ): Promise<void> {
@@ -796,27 +794,24 @@ export async function handleRemark(
   }
   //save remark entity
   for (let index = 0; index < records.length; index++) {
-    const r = records[index];
+    let r = records[index];
     let interaction = NFTUtils.getAction(hexToString(r.value));
-    logger.info(`finish getAction`);
+    // logger.info(`finish getAction`);
 
     let extra = "";
     if (r.extra) {
       logger.info(`check r.extra.length=${r.extra.length}`);
-    }
-    if (r.extra && r.extra.length > 100 && RUN_ON_SUBQUERY_HOST === true) {
-      logger.warn(
-        `extra is too large over 100 records, just ignore when RUN_ON_SUBQUERY_HOST==true`
-      );
-    } else {
       extra = JSON.stringify(r.extra || []);
     }
-    logger.info(`finish extra`);
+    // logger.info(`finish extra`);
     let specVersion = NFTUtils.getRmrkSpecVersion(hexToString(r.value));
-    logger.info(`finish getRmrkSpecVersion`);
+    // logger.info(`finish getRmrkSpecVersion`);
 
     let d = {
-      ...r,
+      value: r.value,
+      caller: r.caller,
+      blockNumber: r.blockNumber,
+      timestamp: r.timestamp,
       id: `${r.blockNumber}-${index}`,
       interaction: interaction,
       extra: extra,
