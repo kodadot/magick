@@ -3,7 +3,7 @@ description: Indexer for RMRK based on SubQuery Starter
 repository: ""
 schema: ./schema.graphql
 network:
-  endpoint: wss://pub.elara.patract.io/kusama
+  endpoint: wss://node-6885049485545332736.jm.onfinality.io/ws?apikey=652fed48-a419-4272-bd8a-f020d0b7a740
   # endpoint: wss://kusama.api.onfinality.io/public-ws
   # endpoint: wss://kusama-rpc.polkadot.io
   dictionary: https://api.subquery.network/sq/subquery/dictionary-kusama

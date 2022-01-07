@@ -27,7 +27,7 @@ services:
       - -f=/app
       - --local
       - --log-level debug
-      - --batch-size=100
+      - --batch-size=10
 
   graphql-engine:
     image: onfinality/subql-query:latest
