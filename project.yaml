@@ -33,7 +33,7 @@ dataSources:
     kind: substrate/Runtime
     filter:
       specName: kusama
-    startBlock: 4892957  #6802210 #4892957
+    startBlock: 9807000  #6802210 #4892957
     mapping: *mymapping # can reuse or change
   - name: westendRuntime
     kind: substrate/Runtime
