@@ -791,6 +791,9 @@ export async function handleRemark(
   const records = getRemarksFrom(extrinsic);
   logger.info(`finish getRemarksFrom`);
 
+  if (records) {
+    logger.info(`check records.length=${records.length}`);
+  }
   //save remark entity
   for (let index = 0; index < records.length; index++) {
     const r = records[index];
@@ -798,6 +801,9 @@ export async function handleRemark(
     logger.info(`finish getAction`);
 
     let extra = "";
+    if (r.extra) {
+      logger.info(`check r.extra.length=${r.extra.length}`);
+    }
     if (r.extra && r.extra.length > 100 && RUN_ON_SUBQUERY_HOST === true) {
       logger.warn(
         `extra is too large over 100 records, just ignore when RUN_ON_SUBQUERY_HOST==true`
