@@ -1,103 +1,163 @@
-# SubQuery - Starter Package
+# Unique 
+### SubQuery Indexer for RMRK NFT Standard
+---
 
+The SubQuery Indexer is suitable for any Substrate chain which wants to parse strings into the NFTs.
+This readme will go through the steps to set up the SubQuery Indexer and provide some valuable hacks for ease of development.
+A SubQuery package defines which data The SubQuery will index from the Substrate blockchain and how it will store it. 
 
-The Starter Package is an example that you can use as a starting point for developing your SubQuery project.
-A SubQuery package defines which data The SubQuery will index from the Substrate blockchain, and how it will store it. 
+> ⚠️ caveat ⚠️: This indexer is can only index RMRK 1.0.0 standard NFTs. If you plan to hack 2.0.0, we would love to welcome you with a PR.
 
-## Preparation
+### Prerequisites 🎒
 
-#### Environment
-
-- [Typescript](https://www.typescriptlang.org/) are required to compile project and define types.  
-
-- Both SubQuery CLI and generated Project have dependencies and require [Node](https://nodejs.org/en/).
-     
-
-#### Install the SubQuery CLI
-
-Install SubQuery CLI globally on your terminal by using Yarn or NPM:
-
-```
-npm install -g @subql/cli
-yarn global add @subql/cli
+```md
+node >= 14
+yarn 🧶
+docker 🐳
+[just](https://github.com/casey/just) 🤖
 ```
 
-Run help to see available commands and usage provide by CLI
-```
-subql help
-```
+### Hyper start 🚀
 
-## Initialize the starter package
-
-Inside the directory in which you want to create the SubQuery project, simply replace `project-name` with your project name and run the command:
-```
-subql init --starter project-name
-```
-Then you should see a folder with your project name has been created inside the directory, you can use this as the start point of your project. And the files should be identical as in the [Directory Structure](https://doc.subquery.network/directory_structure.html).
-
-Last, under the project directory, run following command to install all the dependency.
-```
-yarn install
+First, we need to install dependencies.
+```bash
+just quickstart
 ```
 
+then in the terminal run:
+```
+just up
+```
 
-## Configure your project
+## I want to change something in this project
 
-In the starter package, we have provided a simple example of project configuration. You will be mainly working on the following files:
+The core of this indexer is the following files:
 
-- The Manifest in `project.yaml`
-- The GraphQL Schema in `schema.graphql`
-- The Mapping functions in `src/mappings/` directory
+- Which events/extrinsics to index + configuration - `project.yaml`
+- Entities which we want to save in DB - `schema.graphql`
+- How map events/extrinsics to the GraphQL - `src/mappings/` directory
 
 For more information on how to write the SubQuery, 
 check out our doc section on [Define the SubQuery](https://doc.subquery.network/define_a_subquery.html) 
 
-#### Code generation
+### I want to add/remove fields that are indexed
 
-In order to index your SubQuery project, it is mandatory to build your project first.
-Run this command under the project directory.
+Open `schema.graphql` and modify the entities how much you want. [Supported types can be found here](https://doc.subquery.network/create/graphql/#entities)
 
+The example entity looks like this:
+
+```graphql
+type CollectionEntity @entity {
+  id: ID!
+  issuer: String!
+  currentOwner: String!
+  metadata: String
+  nfts: [NFTEntity] @derivedFrom(field: "collection")
+  blockNumber: BigInt @index
+  burned: Boolean!
+  createdAt: Date!
+}
+```
+
+Each entity needs to have an `id: ID!` field. An exclamation mark (`!`) says that the field is required, and without it, the entity will not be indexed, and the database will fail on null-pointer.
+
+You can also define relationships between entities. For example, if you want to index one-to-many relation, it can be defined like `nfts: [NFTEntity] @derivedFrom(field: "collection")`. `@derivedFrom(field: "collection")` indicates that collection can be queried backwards from `NFTEntity`. 
+
+```graphql
+type NFTEntity @entity {
+  id: ID!
+  collection: CollectionEntity!
+}
+```
+
+If you changed the schema, we need to regenerate it by running:
 ````
-yarn codegen
+just types
 ````
 
-## Build the project
+## I want to add a new event/extrinsic to the index
 
-In order to deploy your SubQuery project to our hosted service, it is mandatory to pack your configuration before upload.
-Run pack command from root directory of your project will automatically generate a `your-project-name.tgz` file.
-
+in `project.yaml` add the new event/extrinsic create new record under the handlers to index:
+```yaml
+    handlers:
+      - handler: handleCall
+        kind: substrate/CallHandler
+        filter:
+          module: utility
+          method: batchAll
+          success: true
 ```
-yarn build
+
+then in `src/mappings/mappingHandlers.ts` add the new mapping:
+```ts
+import {
+  SubstrateExtrinsic,
+} from '@subql/types'
+
+export async function handleCall(extrinsic: SubstrateExtrinsic): Promise<void> {
+  // your implementation should go here
+}
 ```
 
-## Indexing and Query
-
-#### Run required systems in docker
-
-
-Under the project directory run following command:
-
+after you implement what you need, run:
 ```
-docker-compose pull && docker-compose up
+just build
 ```
-#### Query the project
 
-Open your browser and head to `http://localhost:3000`.
+#### Indexing and Query
+
+To spin up the indexer, run:
+```
+just up
+```
+
+It will start the indexer and the SubQuery server.
+
+#### Writing the first query
+
+To query the data open your browser and head to `http://localhost:3000`.
 
 Finally, you should see a GraphQL playground is showing in the explorer and the schemas that ready to query.
 
-For the `subql-starter` project, you can try to query with the following code to get a taste of how it works.
-
+For example, to query first 5 nfts and their collection, you can run:
 ````graphql
-{
-  query{
-    starterEntities(first:10){
-      nodes{
-        field1,
-        field2,
-        field3
+query {
+  nFTEntities(first: 5) {
+    nodes {
+      id
+      issuer
+      collection {
+        id
+        metadata
       }
     }
   }
 }
 ````
+
+### Dev hacks (FAQ) 🦇
+
+We use [just](https://github.com/casey/just), and we recommend using it.
+
+**1. How can I turn off the indexer properly?** 
+
+```bash
+just down
+```
+
+**2. I made a change in mapper. How to re-run the app again?** 
+
+```bash
+just bug
+```
+**3. My DB is a complete mess. How to start again?** 
+
+```bash
+just clear
+```
+
+**4. How can I check for the new version of the SubQuery Indexer?** 
+
+```bash
+just pull
+```
