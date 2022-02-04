@@ -1,4 +1,4 @@
-# Unique 
+# Magick 
 ### SubQuery Indexer for RMRK NFT Standard
 ---
 
