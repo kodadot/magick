@@ -26,6 +26,9 @@ sub: types build
 
 quickstart: pull
   yarn
-  yarn codegen
+  subql codegen
   yarn build
+
+update-deps:
+	npx npm-check-updates -u
   
