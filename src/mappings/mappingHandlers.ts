@@ -3,7 +3,7 @@ import { SubstrateExtrinsic } from "@subql/types";
 import { getRemarksFrom, RemarkResult } from './utils';
 import { Collection, eventFrom, getNftId, NFT, RmrkEvent, RmrkInteraction } from './utils/types';
 import NFTUtils, { hexToString } from './utils/NftUtils';
-import { canOrElseError, exists, hasMeta, isBurned, isBuyLegalOrElseError, isOwnerOrElseError, isPositiveOrElseError, isTransferable, validateInteraction } from './utils/consolidator'
+import { isBuyLegalOrElseError, isOwnerOrElseError, isPositiveOrElseError, validateInteraction, plsBe, real, isInteractive, plsNotBe, burned, withMeta } from './utils/consolidator'
 import { randomBytes } from 'crypto'
 import { emoteId, ensureInteraction } from './utils/helper';
 
@@ -11,9 +11,9 @@ async function mint(remark: RemarkResult) {
   let collection = null
   try {
     collection = NFTUtils.unwrap(remark.value) as Collection
-    canOrElseError<string>(exists, collection.id, true)
+    plsBe<string>(real, collection.id)
     const entity = await CollectionEntity.get(collection.id)
-    canOrElseError<CollectionEntity>(exists, entity)
+    plsNotBe<CollectionEntity>(real, entity)
     const final = CollectionEntity.create(collection)
 
     final.name = collection.name.trim()
@@ -38,10 +38,13 @@ async function mintNFT(remark: RemarkResult) {
   let nft = null
   try {
     nft = NFTUtils.unwrap(remark.value) as NFT
-    canOrElseError<string>(exists, nft.collection, true)
+    logger.info(`[MINT NFT] nft.collection`)
+    plsBe(real, nft.collection)
     const collection = await CollectionEntity.get(nft.collection)
-    canOrElseError<CollectionEntity>(exists, collection, true)
+    plsBe(real, collection)
     isOwnerOrElseError(collection, remark.caller)
+    // FIX FOR id must be provided
+    // nft.id = getNftId(nft, remark.blockNumber)
     const final = NFTEntity.create(nft)
 
     final.id = getNftId(nft, remark.blockNumber)
@@ -96,9 +99,7 @@ async function buy(remark: RemarkResult) {
   try {
     interaction = ensureInteraction(NFTUtils.unwrap(remark.value) as RmrkInteraction)
     const nft = await NFTEntity.get(interaction.id)
-    canOrElseError<NFTEntity>(exists, nft, true)
-    canOrElseError<NFTEntity>(isBurned, nft)
-    canOrElseError<NFTEntity>(isTransferable, nft, true)
+    isInteractive(nft)
     isPositiveOrElseError(nft.price, true)
     isBuyLegalOrElseError(nft, remark.extra || [])
     nft.currentOwner = remark.caller
@@ -124,8 +125,8 @@ async function consume(remark: RemarkResult ) {
   try {
     interaction = ensureInteraction(NFTUtils.unwrap(remark.value) as RmrkInteraction)
     const nft = await NFTEntity.get(interaction.id)
-    canOrElseError<NFTEntity>(exists, nft, true)
-    canOrElseError<NFTEntity>(isBurned, nft)
+    plsBe<NFTEntity>(real, nft)
+    plsNotBe<NFTEntity>(burned, nft)
     isOwnerOrElseError(nft, remark.caller)
     nft.price = BigInt(0)
     nft.burned = true;
@@ -171,9 +172,9 @@ async function changeIssuer(remark: RemarkResult ) {
 
   try {
     interaction = ensureInteraction(NFTUtils.unwrap(remark.value) as RmrkInteraction)
-    canOrElseError<RmrkInteraction>(hasMeta, interaction, true)
+    plsBe(withMeta, interaction)
     const collection = await CollectionEntity.get(interaction.id)
-    canOrElseError<CollectionEntity>(exists, collection, true)
+    plsBe<CollectionEntity>(real, collection)
     isOwnerOrElseError(collection, remark.caller)
     collection.currentOwner = interaction.metadata
     collection.events.push(eventFrom(RmrkEvent.CHANGEISSUER, remark, interaction.metadata))
@@ -191,14 +192,14 @@ async function emote(remark: RemarkResult ) {
 
   try {
     interaction = ensureInteraction(NFTUtils.unwrap(remark.value) as RmrkInteraction)
-    canOrElseError<RmrkInteraction>(hasMeta, interaction, true)
+    plsBe(withMeta, interaction)
     const nft = await NFTEntity.get(interaction.id)
-    canOrElseError<NFTEntity>(exists, nft, true)
-    canOrElseError<NFTEntity>(isBurned, nft)
+    plsBe<NFTEntity>(real, nft)
+    plsNotBe<NFTEntity>(burned, nft)
     const id = emoteId(interaction, remark.caller)
     let emote = await Emote.get(id)
 
-    if (exists(emote)) {
+    if (real(emote)) {
       await Emote.remove(emote.id)
       return;
     }

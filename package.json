@@ -20,10 +20,13 @@
   "author": "vikiival",
   "license": "MIT",
   "devDependencies": {
-    "@polkadot/api": "^6.9.2",
+    "@polkadot/api": "^8.14.1",
     "@subql/cli": "latest",
     "@subql/types": "latest",
-    "typescript": "^4.5.2"
+    "typescript": "^4.7.4"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "resolutions": {
+    "ipfs-unixfs": "6.0.6"
+  } 
 }

@@ -2,22 +2,22 @@ import { RmrkInteraction } from './types'
 import { CollectionEntity, NFTEntity } from '../../types'
 import { ExtraCall } from './extract'
 // import { decodeAddress } from '@polkadot/util-crypto'
-type Entity = CollectionEntity | NFTEntity
+type Entity = CollectionEntity | NFTEntity;
 
-export function exists<T>(entity: T | undefined): boolean {
-  return !!entity
+export function real<T>(entity: T | undefined): boolean {
+  return !!entity;
 }
 
-export function isBurned(nft: NFTEntity) {
-  return nft.burned
+export function burned({ burned }: NFTEntity): boolean {
+  return burned;
 }
 
-export function isTransferable(nft: NFTEntity) {
-  return !!nft.transferable
+export function transferable({ transferable }: NFTEntity) {
+  return !!transferable
 }
 
-export function hasMeta(nft: RmrkInteraction): nft is RmrkInteraction  {
-  return !!nft.metadata
+export function withMeta(interaction: RmrkInteraction): interaction is RmrkInteraction  {
+  return !!interaction.metadata
 }
 
 export function isOwner(entity: Entity, caller: string) {
@@ -35,21 +35,29 @@ export function isOwnerOrElseError(entity: Entity, caller: string) {
   }
 }
 
-export function canOrElseError<T>(callback: (arg: T) => boolean, entity: T, negation?: boolean) {
-  if (negation ? !callback(entity) : callback(entity)) {
-    throw new ReferenceError(`[CONSOLIDATE canOrElseError] Callback${negation ? ' not' : ''} ${callback.name}`)
+export function plsBe<T>(callback: (arg: T) => boolean, entity: T): void {
+  return needTo(callback, entity, true);
+}
+
+export function plsNotBe<T>(callback: (arg: T) => boolean, entity: T): void {
+  return needTo(callback, entity, false);
+}
+
+export function needTo<T>(callback: (arg: T) => boolean, entity: T, positive = true): void {
+  if (positive ? !callback(entity) : callback(entity)) {
+    throw new ReferenceError(`[PROBLEM] Entity needs ${positive ? '' : 'not'}to be ${callback.name}`);
   }
 }
 
+export function isInteractive(nft: NFTEntity): void {
+  plsBe(real, nft)
+  plsNotBe(burned, nft)
+  plsBe(transferable, nft)
+}
+
 export function validateInteraction(nft: NFTEntity, interaction: RmrkInteraction) {
-  try {
-    canOrElseError<RmrkInteraction>(hasMeta, interaction, true)
-    canOrElseError<NFTEntity>(exists, nft, true)
-    canOrElseError<NFTEntity>(isBurned, nft)
-    canOrElseError<NFTEntity>(isTransferable, nft, true)
-  } catch (e) {
-    throw e
-  }
+  plsBe(withMeta, interaction)
+  isInteractive(nft)
 }
 
 export function isPositiveOrElseError(entity: BigInt | number, excludeZero?: boolean) {
